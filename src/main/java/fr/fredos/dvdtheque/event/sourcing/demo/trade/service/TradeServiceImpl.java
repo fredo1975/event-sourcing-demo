@@ -9,6 +9,11 @@ import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
@@ -23,27 +28,26 @@ public class TradeServiceImpl implements TradeService {
 	private EventStore jpaEventStore;
 	@Autowired
     private Retrier conflictRetrier;
-
-    public Trade process(TradeReceiveCommand command) {
+	
+	@Transactional(readOnly = false,propagation = Propagation.REQUIRES_NEW)
+    public Trade process(TradeReceiveCommand command) throws OptimisticLockingException, JsonProcessingException {
         Trade trade = new Trade(randomUUID(), command.getTradeId(), command.getIsin(), command.getCcy(),command.getPrice(),command.getQuantity());
         storeEvents(trade);
-        TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(),trade.getIsin(),trade.getCcy());
-        trade = process(tradeSearchCfinCommand);
         return trade;
     }
 
-    public Optional<Trade> loadTrade(UUID id) {
+    public Optional<Trade> loadTrade(UUID id) throws ClassNotFoundException, InstantiationException, IllegalAccessException, JsonMappingException, JsonProcessingException {
         List<Event> eventStream = jpaEventStore.load(id);
         if (eventStream.isEmpty()) return Optional.empty();
         return Optional.of(new Trade(id, eventStream));
     }
 
-    private Trade process(TradeSearchCfinCommand command) {
+    public Trade process(TradeSearchCfinCommand command) throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
     	return process(command.getId(), trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
     }
 
     private Trade process(UUID id, Consumer<Trade> consumer)
-            throws TradeNotFoundException, OptimisticLockingException {
+            throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
 
     	/*
         return conflictRetrier.get(() -> {
@@ -61,7 +65,7 @@ public class TradeServiceImpl implements TradeService {
         return trade;
     }
 
-    private void storeEvents(Trade trade) {
+    private void storeEvents(Trade trade) throws OptimisticLockingException, JsonProcessingException {
     	jpaEventStore.store(trade.getId(), trade.getNewEvents(), trade.getBaseVersion());
     }
 }

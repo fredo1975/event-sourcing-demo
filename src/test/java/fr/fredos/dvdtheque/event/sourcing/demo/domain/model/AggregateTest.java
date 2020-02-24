@@ -29,7 +29,7 @@ public class AggregateTest {
 		Aggregate aggregate = new Aggregate(id) {
 		};
 		assertThrows(UnsupportedOperationException.class,
-				() -> aggregate.getNewEvents().add(new Event(id, now(UTC), 1) {
+				() -> aggregate.getNewEvents().add(new Event(id, 1) {
 				}));
 	}
 
@@ -45,7 +45,7 @@ public class AggregateTest {
 	@Test
 	void failReplayOfEventWithoutProperChildClassMethodHandler() {
 		UUID id = randomUUID();
-		Event eventWithoutCorrespondingHandler = new Event(id, now(UTC), 1) {
+		Event eventWithoutCorrespondingHandler = new Event(id, 1) {
 		};
 		List<Event> eventStream = singletonList(eventWithoutCorrespondingHandler);
 		assertThrows(UnsupportedOperationException.class, () -> new Aggregate(id, eventStream) {
@@ -118,7 +118,7 @@ public class AggregateTest {
 		private int calledBackTimes = 0;
 
 		private DummyEvent(UUID aggregateId, DateTime timestamp, int version) {
-			super(aggregateId, timestamp, version);
+			super(aggregateId, version);
 		}
 
 		void callback() {
@@ -134,7 +134,7 @@ public class AggregateTest {
 		private RuntimeException exception;
 
 		private ProblematicEvent(UUID aggregateId, DateTime timestamp, int version, RuntimeException exception) {
-			super(aggregateId, timestamp, version);
+			super(aggregateId, version);
 			this.exception = exception;
 		}
 

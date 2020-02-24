@@ -1,8 +1,6 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.joda.time.DateTime.now;
-import static org.joda.time.DateTimeZone.UTC;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,8 +24,8 @@ public class Trade extends Aggregate{
         validateCcy(isin);
         validatePrice(price);
         validateQuantity(quantity);
-        TradeReceived tradeReceived = new TradeReceived(
-                id, now(UTC), getNextVersion(), id, isin, ccy, price, quantity);
+        TradeReceivedEvent tradeReceived = new TradeReceivedEvent(
+                id, getNextVersion(), id, isin, ccy, price, quantity);
         applyNewEvent(tradeReceived);
     }
 
@@ -37,13 +35,13 @@ public class Trade extends Aggregate{
     
     public void searchCfin(UUID  id, String isin, String ccy) {
     	String cfinRetrieved = "00000";
-    	TradeCfinRetrieved tradeCfinRetrievedEvent = new TradeCfinRetrieved(
-                getId(), now(UTC), getNextVersion(), cfinRetrieved);
+    	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
+                getId(), getNextVersion(), cfinRetrieved);
         applyNewEvent(tradeCfinRetrievedEvent);
     }
 
     @SuppressWarnings("unused")
-    public void apply(TradeReceived event) {
+    public void apply(TradeReceivedEvent event) {
     	this.tradeId = event.getTradeId();
     	this.isin = event.getIsin();
         this.ccy = event.getCcy();
@@ -52,7 +50,7 @@ public class Trade extends Aggregate{
     }
 
     @SuppressWarnings("unused")
-    private void apply(TradeCfinRetrieved event) {
+    private void apply(TradeCfinRetrievedEvent event) {
         this.cfin = event.getCfin();
     }
 

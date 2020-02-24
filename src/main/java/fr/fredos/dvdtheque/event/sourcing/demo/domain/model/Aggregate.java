@@ -1,7 +1,9 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.domain.model;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -9,10 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.String.format;
-import static java.util.Collections.emptyList;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 
 public abstract class Aggregate {
     private UUID id;

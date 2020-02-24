@@ -4,18 +4,25 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.UUID;
 
-import org.joda.time.DateTime;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
-public class TradeReceived extends Event{
+public class TradeReceivedEvent extends Event{
 	private UUID tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
-    public TradeReceived(UUID aggregateId, DateTime timestamp, int version,UUID tradeId,String isin,String ccy,double price,int quantity) {
-        super(aggregateId, timestamp, version);
+    @JsonCreator
+    public TradeReceivedEvent(@JsonProperty("aggregateId")UUID aggregateId,@JsonProperty("version") int version,
+    		@JsonProperty("tradeId") UUID tradeId,
+    		@JsonProperty("isin") String isin,
+    		@JsonProperty("ccy") String ccy,
+    		@JsonProperty("price") double price,
+    		@JsonProperty("quantity")int quantity) {
+        super(aggregateId, version);
         this.tradeId = checkNotNull(tradeId);
         this.isin = checkNotNull(isin);
         this.ccy = checkNotNull(ccy);

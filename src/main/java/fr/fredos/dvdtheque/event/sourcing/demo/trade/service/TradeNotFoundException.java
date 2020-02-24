@@ -6,7 +6,9 @@ import java.util.UUID;
 
 public class TradeNotFoundException extends RuntimeException {
 
-    public TradeNotFoundException(UUID id) {
-        super(format("Trade with id '%s' could not be found", id));
-    }
+	private static final long serialVersionUID = -9143997159257862671L;
+
+	public TradeNotFoundException(UUID id) {
+		super(format("Trade with id '%s' could not be found", id));
+	}
 }
