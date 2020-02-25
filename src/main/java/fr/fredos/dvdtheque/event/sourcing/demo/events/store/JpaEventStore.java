@@ -12,15 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.OptimisticLockingException;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeEntity;
+import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
 @Component("jpaEventStore")
 public class JpaEventStore implements EventStore{
 
@@ -28,40 +27,46 @@ public class JpaEventStore implements EventStore{
 	TradeRepository tradeRepository;
 	
 	@Override
-	public void store(UUID aggregateId, List<Event> newEvents, int baseVersion) throws OptimisticLockingException, JsonProcessingException {
+	public void store(UUID aggregateId, List<Event> newEvents, int baseVersion) throws SerializeException {
 		TradeEntity entity = new TradeEntity(aggregateId.toString());
 		entity.setSequenceNumber(Integer.valueOf(baseVersion));
 		entity.setAggregateIdentifier(aggregateId.toString());
 		entity.setEventIdentifier(randomUUID().toString());
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
-		if(event instanceof TradeReceivedEvent) {
-			TradeReceivedEvent e = (TradeReceivedEvent)event;
-			entity.setPayload(map.writeValueAsString(e));
-		}else {
-			TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
-			entity.setPayload(map.writeValueAsString(e));
+		try {
+			if(event instanceof TradeReceivedEvent) {
+				TradeReceivedEvent e = (TradeReceivedEvent)event;
+				entity.setPayload(map.writeValueAsString(e));
+			}else {
+				TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
+				entity.setPayload(map.writeValueAsString(e));
+			}
+			entity.setPayloadType(event.getClass().getTypeName());
+			tradeRepository.save(entity);
+		}catch(JsonProcessingException e) {
+			throw new SerializeException(aggregateId);
 		}
-		entity.setPayloadType(event.getClass().getTypeName());
-		tradeRepository.save(entity);
-		//em.getTransaction().commit();
 	}
 
 	@Override
-	public List<Event> load(UUID aggregateId) throws ClassNotFoundException, InstantiationException, IllegalAccessException, JsonMappingException, JsonProcessingException {
+	public List<Event> load(UUID aggregateId) throws ClassNotFoundException, InstantiationException, IllegalAccessException, SerializeException {
 		List<TradeEntity> l = tradeRepository.loadByAggregateId(aggregateId.toString());
 		if(CollectionUtils.isNotEmpty(l)) {
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();
 			for(TradeEntity te : l) {
 				Class<?> clazz = Class.forName(te.getPayloadType());
-				if(clazz.equals(TradeReceivedEvent.class)) {
-					TradeReceivedEvent e = (TradeReceivedEvent) map.readValue(te.getPayload(), clazz);
-					//TradeReceivedEvent e = (TradeReceivedEvent) clazz.newInstance();
+				Event e;
+				try {
+					if(clazz.equals(TradeReceivedEvent.class)) {
+						e = (TradeReceivedEvent) map.readValue(te.getPayload(), clazz);
+					}else {
+						e = (TradeCfinRetrievedEvent) map.readValue(te.getPayload(), clazz);
+					}
 					eventList.add(e);
-				}else {
-					TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent) clazz.newInstance();
-					eventList.add(e);
+				}catch(JsonProcessingException ex) {
+					throw new SerializeException(aggregateId);
 				}
 			}
 			return eventList;

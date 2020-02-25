@@ -16,11 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.OptimisticLockingException;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
 
 @RunWith(SpringRunner.class)
@@ -32,7 +29,7 @@ public class TradeServiceImplTest {
 	TradeService tradeService;
 	
 	@Test
-	void tradeReceiveCommandTest() throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
+	void tradeReceiveCommandTest() throws TradeNotFoundException,SerializeException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID(), "FR0000", "EUR", 1000.0d, 50);
 		Trade trade = tradeService.process(command);
 		assertNotNull(trade);
@@ -58,7 +55,7 @@ public class TradeServiceImplTest {
 	}
 	
 	@Test
-	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
+	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
 		for(int i=0;i<500;i++) {
@@ -83,7 +80,7 @@ public class TradeServiceImplTest {
 			Trade trade=null;
 			try {
 				trade = tradeService.process(command);
-			} catch (OptimisticLockingException | JsonProcessingException e) {
+			} catch (SerializeException e) {
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
@@ -98,8 +95,8 @@ public class TradeServiceImplTest {
 			TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(),trade.getIsin(),trade.getCcy());
 	        try {
 				trade = tradeService.process(tradeSearchCfinCommand);
-			} catch (TradeNotFoundException | OptimisticLockingException | ClassNotFoundException
-					| InstantiationException | IllegalAccessException | JsonProcessingException e) {
+			} catch (TradeNotFoundException | SerializeException | ClassNotFoundException
+					| InstantiationException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
 	        assertNotNull(trade);
