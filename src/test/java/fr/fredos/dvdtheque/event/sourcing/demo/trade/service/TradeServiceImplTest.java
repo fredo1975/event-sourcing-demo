@@ -33,7 +33,6 @@ public class TradeServiceImplTest {
 	
 	@Test
 	void tradeReceiveCommandTest() throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
-		
 		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID(), "FR0000", "EUR", 1000.0d, 50);
 		Trade trade = tradeService.process(command);
 		assertNotNull(trade);
@@ -43,7 +42,6 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
-		//assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
 		
 		TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(),trade.getIsin(),trade.getCcy());
@@ -55,13 +53,12 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
-		//assertNotNull(trade.getCfin());
+		assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
 	}
 	
 	@Test
 	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, OptimisticLockingException, ClassNotFoundException, InstantiationException, IllegalAccessException, JsonProcessingException {
-		
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
 		for(int i=0;i<500;i++) {
@@ -87,7 +84,6 @@ public class TradeServiceImplTest {
 			try {
 				trade = tradeService.process(command);
 			} catch (OptimisticLockingException | JsonProcessingException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
@@ -97,7 +93,6 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
-			//assertNotNull(trade.getCfin());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
 			
 			TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(),trade.getIsin(),trade.getCcy());
@@ -105,7 +100,6 @@ public class TradeServiceImplTest {
 				trade = tradeService.process(tradeSearchCfinCommand);
 			} catch (TradeNotFoundException | OptimisticLockingException | ClassNotFoundException
 					| InstantiationException | IllegalAccessException | JsonProcessingException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 	        assertNotNull(trade);
@@ -115,7 +109,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
-			//assertNotNull(trade.getCfin());
+			assertNotNull(trade.getCfin());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
 		}
 	}
