@@ -11,4 +11,8 @@ public class TradeNotFoundException extends RuntimeException {
 	public TradeNotFoundException(UUID id) {
 		super(format("Trade with id '%s' could not be found", id));
 	}
+	
+	public TradeNotFoundException(long id) {
+		super(format("Trade with id '%s' could not be found", id));
+	}
 }

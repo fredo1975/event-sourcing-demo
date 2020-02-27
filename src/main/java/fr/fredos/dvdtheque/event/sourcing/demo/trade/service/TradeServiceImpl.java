@@ -7,16 +7,22 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
+import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeEntity;
 
 @Service
 public class TradeServiceImpl implements TradeService {

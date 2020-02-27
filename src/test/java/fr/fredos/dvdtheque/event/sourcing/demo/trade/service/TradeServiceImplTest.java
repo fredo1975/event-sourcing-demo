@@ -30,6 +30,7 @@ public class TradeServiceImplTest {
 	
 	@Test
 	void tradeReceiveCommandTest() throws TradeNotFoundException,SerializeException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+		long start = new Date().getTime();
 		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID(), "FR0000", "EUR", 1000.0d, 50);
 		Trade trade = tradeService.process(command);
 		assertNotNull(trade);
@@ -52,13 +53,15 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getQuantity());
 		assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
+		long end = new Date().getTime()-start;
+		System.out.println("Finished tradeReceiveCommandTest in "+end + " ms");
 	}
 	
 	@Test
 	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for(int i=0;i<500;i++) {
+		for(int i=0;i<1000;i++) {
 			executor.execute(new MyRunnable(tradeService));
 		}
 		executor.shutdown();

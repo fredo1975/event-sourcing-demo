@@ -1,5 +1,6 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.events.store;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 
@@ -7,12 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
@@ -25,6 +30,14 @@ public class JpaEventStore implements EventStore{
 
 	@Autowired
 	TradeRepository tradeRepository;
+	private IMap<String, List<TradeEntity>> mapEvents;
+	@Autowired
+	private HazelcastInstance instance;
+	@PostConstruct
+	public void init() {
+		mapEvents = instance.getMap("events");
+	}
+	
 	
 	@Override
 	public void store(UUID aggregateId, List<Event> newEvents, int baseVersion) throws SerializeException {
@@ -44,6 +57,7 @@ public class JpaEventStore implements EventStore{
 			}
 			entity.setPayloadType(event.getClass().getTypeName());
 			tradeRepository.save(entity);
+			mapEvents.put(aggregateId.toString(), newArrayList(entity));
 		}catch(JsonProcessingException e) {
 			throw new SerializeException(aggregateId);
 		}
@@ -51,7 +65,11 @@ public class JpaEventStore implements EventStore{
 
 	@Override
 	public List<Event> load(UUID aggregateId) throws ClassNotFoundException, InstantiationException, IllegalAccessException, SerializeException {
-		List<TradeEntity> l = tradeRepository.loadByAggregateId(aggregateId.toString());
+		List<TradeEntity> l = mapEvents.get(aggregateId);
+		if (CollectionUtils.isEmpty(l)) {
+			l = tradeRepository.loadByAggregateId(aggregateId.toString());
+		}
+		//List<TradeEntity> l = tradeRepository.loadByAggregateId(aggregateId.toString());
 		if(CollectionUtils.isNotEmpty(l)) {
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();

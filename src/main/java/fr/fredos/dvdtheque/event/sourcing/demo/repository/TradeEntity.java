@@ -1,5 +1,7 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.repository;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -11,7 +13,11 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "DOMAIN_EVENT_ENTRY")
-public class TradeEntity {
+public class TradeEntity implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -14288181758812657L;
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "next_val")
 	@SequenceGenerator(name="next_val", sequenceName = "next_val")
