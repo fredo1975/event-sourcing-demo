@@ -11,7 +11,8 @@ import javax.persistence.Table;
 @Table(name = "TRADE_CRUD_ENTITY")
 public class TradeCrudEntity {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "next_val")
+	@SequenceGenerator(name="next_val", sequenceName = "next_val")
 	public Long id;
 	@Column(name = "ISIN")
 	private String isin;
@@ -23,6 +24,8 @@ public class TradeCrudEntity {
     private int quantity;
 	@Column(name = "CFIN")
     private String cfin;
+	@Column(name = "SENT")
+    private boolean sent;
 	
 	public TradeCrudEntity() {
 		super();
@@ -63,6 +66,14 @@ public class TradeCrudEntity {
 	}
 	public void setCfin(String cfin) {
 		this.cfin = cfin;
+	}
+
+	public boolean isSent() {
+		return sent;
+	}
+
+	public void setSent(boolean sent) {
+		this.sent = sent;
 	}
 	
 }

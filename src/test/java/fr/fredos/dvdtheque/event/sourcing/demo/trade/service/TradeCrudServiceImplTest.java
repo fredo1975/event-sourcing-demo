@@ -1,6 +1,7 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.trade.service;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
@@ -31,12 +32,13 @@ public class TradeCrudServiceImplTest {
 		trade.setCcy("EUR");
 		trade.setPrice(1000.0d);
 		trade.setQuantity(50);
-		TradeCrudEntity tradeCrudEntity = tradeCrudService.save(trade);
+		TradeCrudEntity tradeCrudEntity = tradeCrudService.processInOneTransaction(trade);
 		assertNotNull(tradeCrudEntity);
 		tradeCrudEntity.setCfin("00000");
-		tradeCrudEntity = tradeCrudService.update(tradeCrudEntity);
+		//tradeCrudEntity = tradeCrudService.update(tradeCrudEntity);
 		assertNotNull(tradeCrudEntity);
 		assertNotNull(tradeCrudEntity.getCfin());
+		assertTrue(tradeCrudEntity.isSent());
 		long end = new Date().getTime()-start;
 		System.out.println("Finished tradeProcess in "+end + " ms");
 	}
@@ -45,14 +47,14 @@ public class TradeCrudServiceImplTest {
 	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for(int i=0;i<1000;i++) {
+		for(int i=0;i<300;i++) {
 			executor.execute(new MyRunnable(tradeCrudService));
 		}
 		executor.shutdown();
 		while (!executor.isTerminated()) {
-			try {
+			/*try {
 				Thread.sleep(500);
-			} catch (InterruptedException e) {e.printStackTrace();}
+			} catch (InterruptedException e) {e.printStackTrace();}*/
 		}
 		long end = new Date().getTime()-start;
 		System.out.println("Finished all threads in "+end + " ms");
@@ -70,12 +72,15 @@ public class TradeCrudServiceImplTest {
 			trade.setCcy("EUR");
 			trade.setPrice(1000.0d);
 			trade.setQuantity(50);
-			TradeCrudEntity tradeCrudEntity = tradeCrudService.save(trade);
+			/*
+			TradeCrudEntity tradeCrudEntity = tradeCrudService.save(trade);*/
+			TradeCrudEntity tradeCrudEntity = tradeCrudService.processInOneTransaction(trade);
 			assertNotNull(tradeCrudEntity);
 			tradeCrudEntity.setCfin("00000");
-			tradeCrudEntity = tradeCrudService.update(tradeCrudEntity);
+			//tradeCrudEntity = tradeCrudService.update(tradeCrudEntity);
 			assertNotNull(tradeCrudEntity);
 			assertNotNull(tradeCrudEntity.getCfin());
+			assertTrue(tradeCrudEntity.isSent());
 		}
 	}
 }

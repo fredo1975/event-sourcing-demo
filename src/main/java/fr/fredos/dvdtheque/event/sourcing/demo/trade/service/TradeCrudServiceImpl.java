@@ -25,6 +25,7 @@ public class TradeCrudServiceImpl implements TradeCrudService {
 		return tradeCrudRepository.save(tradeCrudEntity);
 	}
 	@Transactional(readOnly = false,propagation = Propagation.REQUIRES_NEW)
+	@Override
 	public TradeCrudEntity update(TradeCrudEntity trade) {
 		Optional<TradeCrudEntity> optionalTradeCrudEntity = tradeCrudRepository.findById(trade.getId());
 		if(optionalTradeCrudEntity.isPresent()) {
@@ -34,5 +35,18 @@ public class TradeCrudServiceImpl implements TradeCrudService {
 		}else {
 			throw new TradeNotFoundException(trade.getId());
 		}
+	}
+	@Transactional(readOnly = false,propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public TradeCrudEntity processInOneTransaction(TradeCrud trade) {
+		TradeCrudEntity tradeCrudEntity = new TradeCrudEntity();
+		tradeCrudEntity.setCcy(trade.getCcy());
+		tradeCrudEntity.setIsin(trade.getIsin());
+		tradeCrudEntity.setPrice(trade.getPrice());
+		tradeCrudEntity.setQuantity(trade.getQuantity());
+		tradeCrudRepository.save(tradeCrudEntity);
+		tradeCrudEntity.setCfin("00000");
+		tradeCrudEntity.setSent(true);
+		return tradeCrudEntity;
 	}
 }

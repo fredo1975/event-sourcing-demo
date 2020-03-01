@@ -2,22 +2,20 @@ package fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
 public class TradeReceivedEvent extends Event{
-	private UUID tradeId;
+	private String tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
     @JsonCreator
-    public TradeReceivedEvent(@JsonProperty("aggregateId")UUID aggregateId,@JsonProperty("version") int version,
-    		@JsonProperty("tradeId") UUID tradeId,
+    public TradeReceivedEvent(@JsonProperty("aggregateId")String aggregateId,@JsonProperty("version") Integer version,
+    		@JsonProperty("tradeId") String tradeId,
     		@JsonProperty("isin") String isin,
     		@JsonProperty("ccy") String ccy,
     		@JsonProperty("price") double price,
@@ -30,7 +28,7 @@ public class TradeReceivedEvent extends Event{
         this.quantity = checkNotNull(quantity);
     }
 	
-	public UUID getTradeId() {
+	public String getTradeId() {
 		return tradeId;
 	}
 
@@ -45,6 +43,12 @@ public class TradeReceivedEvent extends Event{
 	}
 	public int getQuantity() {
 		return quantity;
+	}
+
+	@Override
+	public String toString() {
+		return "TradeReceivedEvent [tradeId=" + tradeId + ", isin=" + isin + ", ccy=" + ccy + ", price=" + price
+				+ ", quantity=" + quantity + "]";
 	}
 
 }

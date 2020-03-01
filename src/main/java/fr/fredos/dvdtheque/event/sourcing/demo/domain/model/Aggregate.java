@@ -9,21 +9,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
 public abstract class Aggregate {
-    private UUID id;
+    private String id;
     private int baseVersion;
     private List<Event> newEvents;
 
-    protected Aggregate(UUID id) {
+    protected Aggregate(String id) {
         this(id, emptyList());
     }
 
-    protected Aggregate(UUID id, List<Event> eventStream) {
+    protected Aggregate(String id, List<Event> eventStream) {
         checkNotNull(id);
         checkNotNull(eventStream);
         this.id = id;
@@ -55,7 +54,7 @@ public abstract class Aggregate {
         }
     }
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 

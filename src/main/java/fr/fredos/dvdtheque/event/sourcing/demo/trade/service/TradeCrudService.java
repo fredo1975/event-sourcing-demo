@@ -7,4 +7,5 @@ public interface TradeCrudService {
 
 	TradeCrudEntity save(TradeCrud trade);
 	TradeCrudEntity update(TradeCrudEntity trade);
+	TradeCrudEntity processInOneTransaction(TradeCrud trade);
 }

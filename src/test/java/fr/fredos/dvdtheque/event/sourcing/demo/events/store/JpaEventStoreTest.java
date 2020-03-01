@@ -28,14 +28,14 @@ public class JpaEventStoreTest {
 	@Test
     void storeEventsInOrder() throws ClassNotFoundException, InstantiationException, IllegalAccessException, OptimisticLockingException, JsonProcessingException {
         UUID aggregateId = randomUUID();
-        Event e1 = new Event(aggregateId,1){};
-        Event e2 = new Event(aggregateId, 2){};
-        Event e3 = new Event(aggregateId,  3){};
-        jpaEventStore.store(aggregateId, newArrayList(e1), 0);
-        jpaEventStore.store(aggregateId, newArrayList(e2), 1);
-        jpaEventStore.store(aggregateId, newArrayList(e3), 2);
+        Event e1 = new Event(aggregateId.toString(),1){};
+        Event e2 = new Event(aggregateId.toString(),2){};
+        Event e3 = new Event(aggregateId.toString(),3){};
+        jpaEventStore.store(aggregateId.toString(), newArrayList(e1), 0);
+        jpaEventStore.store(aggregateId.toString(), newArrayList(e2), 1);
+        jpaEventStore.store(aggregateId.toString(), newArrayList(e3), 2);
 
-        List<Event> eventStream = jpaEventStore.load(aggregateId);
+        List<Event> eventStream = jpaEventStore.load(aggregateId.toString());
         assertThat(eventStream.size(), equalTo(3));
         assertThat(eventStream.get(0), equalTo(e1));
         assertThat(eventStream.get(1), equalTo(e2));

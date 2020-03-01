@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 public class AggregateTest {
 	@Test
 	void newAggregateHasBaseVersion0() {
-		Aggregate aggregate = new Aggregate(randomUUID()) {
+		Aggregate aggregate = new Aggregate(randomUUID().toString()) {
 		};
 		assertThat(aggregate.getBaseVersion(), equalTo(0));
 	}
@@ -26,29 +26,29 @@ public class AggregateTest {
 	@Test
 	void newEventsListIsImmutable() {
 		UUID id = randomUUID();
-		Aggregate aggregate = new Aggregate(id) {
+		Aggregate aggregate = new Aggregate(randomUUID().toString()) {
 		};
 		assertThrows(UnsupportedOperationException.class,
-				() -> aggregate.getNewEvents().add(new Event(id, 1) {
+				() -> aggregate.getNewEvents().add(new Event(id.toString(), 1) {
 				}));
 	}
 
 	@Test
 	void replayEventStreamUsingChildClassMethods() {
 		UUID id = randomUUID();
-		DummyEvent eventWithCorrespondingHandler = new DummyEvent(id, now(UTC), 1);
+		DummyEvent eventWithCorrespondingHandler = new DummyEvent(id.toString(), now(UTC), 1);
 		List<Event> eventStream = singletonList(eventWithCorrespondingHandler);
-		new BackCallerAggregate(id, eventStream);
+		new BackCallerAggregate(id.toString(), eventStream);
 		assertThat(eventWithCorrespondingHandler.getCalledBackTimes(), equalTo(1));
 	}
 
 	@Test
 	void failReplayOfEventWithoutProperChildClassMethodHandler() {
 		UUID id = randomUUID();
-		Event eventWithoutCorrespondingHandler = new Event(id, 1) {
+		Event eventWithoutCorrespondingHandler = new Event(id.toString(), 1) {
 		};
 		List<Event> eventStream = singletonList(eventWithoutCorrespondingHandler);
-		assertThrows(UnsupportedOperationException.class, () -> new Aggregate(id, eventStream) {
+		assertThrows(UnsupportedOperationException.class, () -> new Aggregate(id.toString(), eventStream) {
 		});
 	}
 
@@ -56,24 +56,24 @@ public class AggregateTest {
 	void propagatesExceptionOfFailingReplay() {
 		UUID id = randomUUID();
 		ArithmeticException replayException = new ArithmeticException();
-		ProblematicEvent problematicEvent = new ProblematicEvent(id, now(UTC), 1, replayException);
+		ProblematicEvent problematicEvent = new ProblematicEvent(id.toString(), now(UTC), 1, replayException);
 		List<Event> eventStream = singletonList(problematicEvent);
-		assertThrows(ArithmeticException.class, () -> new BackCallerAggregate(id, eventStream));
+		assertThrows(ArithmeticException.class, () -> new BackCallerAggregate(id.toString(), eventStream));
 	}
 
 	@Test
 	void replayedAggregateKeepsEventStreamVersionAsItsBaseVersion() {
 		UUID id = randomUUID();
-		List<Event> eventStream = singletonList(new DummyEvent(id, now(UTC), 1));
-		Aggregate aggregate = new BackCallerAggregate(id, eventStream);
+		List<Event> eventStream = singletonList(new DummyEvent(id.toString(), now(UTC), 1));
+		Aggregate aggregate = new BackCallerAggregate(id.toString(), eventStream);
 		assertThat(aggregate.getBaseVersion(), equalTo(1));
-		aggregate.applyNewEvent(new DummyEvent(id, now(UTC), 2));
+		aggregate.applyNewEvent(new DummyEvent(id.toString(), now(UTC), 2));
 		assertThat(aggregate.getBaseVersion(), equalTo(1));
 	}
 
 	@Test
 	void nextVersionOfEmptyEventStreamIs1() {
-		Aggregate aggregate = new Aggregate(randomUUID()) {
+		Aggregate aggregate = new Aggregate(randomUUID().toString()) {
 		};
 		assertThat(aggregate.getNextVersion(), equalTo(1));
 		assertThat(aggregate.getNextVersion(), equalTo(1));
@@ -82,25 +82,25 @@ public class AggregateTest {
 	@Test
 	void nextVersionOfExistingEventStreamIsTotalOfEventsPlus1() {
 		UUID id = randomUUID();
-		List<Event> eventStream = singletonList(new DummyEvent(id, now(UTC), 1));
-		Aggregate aggregate = new BackCallerAggregate(id, eventStream);
+		List<Event> eventStream = singletonList(new DummyEvent(id.toString(), now(UTC), 1));
+		Aggregate aggregate = new BackCallerAggregate(id.toString(), eventStream);
 		assertThat(aggregate.getNextVersion(), equalTo(2));
 
-		aggregate.applyNewEvent(new DummyEvent(id, now(UTC), 2));
+		aggregate.applyNewEvent(new DummyEvent(id.toString(), now(UTC), 2));
 		assertThat(aggregate.getNextVersion(), equalTo(3));
 	}
 
 	@Test
 	void failOnWrongNewEventVersion() {
 		UUID id = randomUUID();
-		List<Event> eventStream = singletonList(new DummyEvent(id, now(UTC), 1));
-		Aggregate aggregate = new BackCallerAggregate(id, eventStream);
-		assertThrows(IllegalArgumentException.class, () -> aggregate.applyNewEvent(new DummyEvent(id, now(UTC), 1)));
+		List<Event> eventStream = singletonList(new DummyEvent(id.toString(), now(UTC), 1));
+		Aggregate aggregate = new BackCallerAggregate(id.toString(), eventStream);
+		assertThrows(IllegalArgumentException.class, () -> aggregate.applyNewEvent(new DummyEvent(id.toString(), now(UTC), 1)));
 	}
 
 	private static class BackCallerAggregate extends Aggregate {
-		private BackCallerAggregate(UUID id, List<Event> eventStream) {
-			super(id, eventStream);
+		private BackCallerAggregate(String id, List<Event> eventStream) {
+			super(id.toString(), eventStream);
 		}
 
 		@SuppressWarnings("unused")
@@ -117,8 +117,8 @@ public class AggregateTest {
 	private static class DummyEvent extends Event {
 		private int calledBackTimes = 0;
 
-		private DummyEvent(UUID aggregateId, DateTime timestamp, int version) {
-			super(aggregateId, version);
+		private DummyEvent(String aggregateId, DateTime timestamp, int version) {
+			super(aggregateId.toString(), version);
 		}
 
 		void callback() {
@@ -133,8 +133,8 @@ public class AggregateTest {
 	private static class ProblematicEvent extends Event {
 		private RuntimeException exception;
 
-		private ProblematicEvent(UUID aggregateId, DateTime timestamp, int version, RuntimeException exception) {
-			super(aggregateId, version);
+		private ProblematicEvent(String aggregateId, DateTime timestamp, int version, RuntimeException exception) {
+			super(aggregateId.toString(), version);
 			this.exception = exception;
 		}
 

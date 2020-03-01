@@ -2,9 +2,9 @@ package fr.fredos.dvdtheque.event.sourcing.demo.events.store;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
+
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -18,10 +18,10 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.OptimisticLockingExc
 @Component("inMemoryEventStore")
 public class InMemoryEventStore implements EventStore {
 
-    private final Map<UUID, List<Event>> eventStore = new ConcurrentHashMap<>();
+    private final Map<String, List<Event>> eventStore = new ConcurrentHashMap<>();
 
     @Override
-    public void store(UUID aggregateId, List<Event> newEvents, int baseVersion) throws OptimisticLockingException {
+    public void store(String aggregateId, List<Event> newEvents, int baseVersion) throws OptimisticLockingException {
         eventStore.merge(aggregateId, newEvents, (oldValue, value) -> {
             if (baseVersion != oldValue.get(oldValue.size() - 1).getVersion())
                 throw new OptimisticLockingException("Base version does not match current stored version");
@@ -31,7 +31,13 @@ public class InMemoryEventStore implements EventStore {
     }
 
     @Override
-    public List<Event> load(UUID aggregateId) {
+    public List<Event> load(String aggregateId) {
         return ImmutableList.copyOf(eventStore.getOrDefault(aggregateId, emptyList()));
     }
+
+	@Override
+	public List<Event> loadAllNotSentEvents() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

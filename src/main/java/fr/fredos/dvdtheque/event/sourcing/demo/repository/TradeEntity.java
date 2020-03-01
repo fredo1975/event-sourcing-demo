@@ -7,16 +7,13 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "DOMAIN_EVENT_ENTRY")
 public class TradeEntity implements Serializable{
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -14288181758812657L;
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "next_val")
@@ -24,21 +21,22 @@ public class TradeEntity implements Serializable{
 	@Column(name = "GLOBAL_INDEX", updatable = false, nullable = false)
 	public Integer globalIndex;
 	@Column(name = "EVENT_IDENTIFIER")
+	@NotNull
 	private String eventIdentifier;
-	@Lob
 	@Column(name = "PAYLOAD", columnDefinition="BLOB")
 	private String payload;
 	@Column(name = "PAYLOAD_TYPE")
+	@NotNull
 	private String payloadType;
-	
 	@Column(name = "AGGREGATE_IDENTIFIER")
+	@NotNull
 	private String aggregateIdentifier;
 	@Column(name = "SEQUENCE_NUMBER")
+	@NotNull
 	private Integer sequenceNumber;
 	@Column(name = "TYPE")
 	private String type;
 	
-
 	protected TradeEntity() {
 	}
 
@@ -46,7 +44,15 @@ public class TradeEntity implements Serializable{
 		super();
 		this.aggregateIdentifier = aggregateIdentifier;
 	}
-
+	public TradeEntity(final String aggregateIdentifier,
+			final Integer sequenceNumber,
+			final String eventIdentifier,
+			final String payload,
+			final String payloadType) {
+		super();
+		this.aggregateIdentifier = aggregateIdentifier;
+		this.sequenceNumber = sequenceNumber;
+	}
 	public String getEventIdentifier() {
 		return eventIdentifier;
 	}
@@ -101,6 +107,38 @@ public class TradeEntity implements Serializable{
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((eventIdentifier == null) ? 0 : eventIdentifier.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TradeEntity other = (TradeEntity) obj;
+		if (eventIdentifier == null) {
+			if (other.eventIdentifier != null)
+				return false;
+		} else if (!eventIdentifier.equals(other.eventIdentifier))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "TradeEntity [globalIndex=" + globalIndex + ", eventIdentifier=" + eventIdentifier + ", payload="
+				+ payload + ", payloadType=" + payloadType + ", aggregateIdentifier=" + aggregateIdentifier
+				+ ", sequenceNumber=" + sequenceNumber + ", type=" + type + "]";
 	}
 
 	

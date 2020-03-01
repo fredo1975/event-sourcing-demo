@@ -3,7 +3,6 @@ package fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -11,13 +10,13 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Aggregate;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
 public class Trade extends Aggregate{
-	private UUID tradeId;
+	private String tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
     private String cfin;
-    public Trade(UUID  id, UUID tradeId, String isin, String ccy, double price, int quantity) {
+    public Trade(String  id, String tradeId, String isin, String ccy, double price, int quantity) {
         super(id);
         validateID(tradeId);
         validateIsin(isin);
@@ -29,15 +28,21 @@ public class Trade extends Aggregate{
         applyNewEvent(tradeReceived);
     }
 
-    public Trade(UUID id, List<Event> eventStream) {
+    public Trade(String id, List<Event> eventStream) {
         super(id, eventStream);
     }
     
-    public void searchCfin(UUID  id, String isin, String ccy) {
+    public void searchCfin(String  id, String isin, String ccy) {
     	String cfinRetrieved = "00000";
     	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
                 getId(), getNextVersion(), cfinRetrieved);
         applyNewEvent(tradeCfinRetrievedEvent);
+    }
+    
+    public void send(String id) {
+    	TradeSentEvent tradeSendedEvent = new TradeSentEvent(
+                getId(), getNextVersion());
+        applyNewEvent(tradeSendedEvent);
     }
 
     @SuppressWarnings("unused")
@@ -53,8 +58,13 @@ public class Trade extends Aggregate{
     private void apply(TradeCfinRetrievedEvent event) {
         this.cfin = event.getCfin();
     }
+    
+    @SuppressWarnings("unused")
+    private void apply(TradeSentEvent event) {
+        //this.cfin = event.getCfin();
+    }
 
-	public UUID getTradeId() {
+	public String getTradeId() {
 		return tradeId;
 	}
 
@@ -78,7 +88,7 @@ public class Trade extends Aggregate{
 		return cfin;
 	}
 
-	private void validateID(UUID id) {
+	private void validateID(String id) {
 		checkNotNull(id);
     }
 

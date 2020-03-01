@@ -6,7 +6,6 @@ import static java.util.UUID.randomUUID;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 
@@ -23,27 +22,30 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedEvent;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeSentEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeEntity;
+import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.DeserializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
+import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.UnknownEventException;
 @Component("jpaEventStore")
 public class JpaEventStore implements EventStore{
 
 	@Autowired
 	TradeRepository tradeRepository;
-	private IMap<String, List<TradeEntity>> mapEvents;
+	private IMap<String, List<TradeEntity>> mapTradeEntity;
 	@Autowired
 	private HazelcastInstance instance;
 	@PostConstruct
 	public void init() {
-		mapEvents = instance.getMap("events");
+		mapTradeEntity = instance.getMap("events");
 	}
 	
 	
 	@Override
-	public void store(UUID aggregateId, List<Event> newEvents, int baseVersion) throws SerializeException {
-		TradeEntity entity = new TradeEntity(aggregateId.toString());
+	public void store(String aggregateId, List<Event> newEvents, int baseVersion){
+		TradeEntity entity = new TradeEntity(aggregateId);
 		entity.setSequenceNumber(Integer.valueOf(baseVersion));
-		entity.setAggregateIdentifier(aggregateId.toString());
+		entity.setAggregateIdentifier(aggregateId);
 		entity.setEventIdentifier(randomUUID().toString());
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
@@ -51,45 +53,64 @@ public class JpaEventStore implements EventStore{
 			if(event instanceof TradeReceivedEvent) {
 				TradeReceivedEvent e = (TradeReceivedEvent)event;
 				entity.setPayload(map.writeValueAsString(e));
-			}else {
+			}else if(event instanceof TradeSentEvent) {
+				TradeSentEvent e = (TradeSentEvent)event;
+				entity.setPayload(map.writeValueAsString(e));
+			}else if(event instanceof TradeCfinRetrievedEvent){
 				TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
 				entity.setPayload(map.writeValueAsString(e));
 			}
 			entity.setPayloadType(event.getClass().getTypeName());
+			List<TradeEntity> l = mapTradeEntity.get(aggregateId.toString());
+			if (CollectionUtils.isEmpty(l)) {
+				mapTradeEntity.put(aggregateId.toString(), newArrayList(entity));
+			}else {
+				l.add(entity);
+				mapTradeEntity.put(aggregateId.toString(), l);
+			}
 			tradeRepository.save(entity);
-			mapEvents.put(aggregateId.toString(), newArrayList(entity));
 		}catch(JsonProcessingException e) {
-			throw new SerializeException(aggregateId);
+			throw new SerializeException(aggregateId.toString(),event.getClass().getTypeName());
 		}
 	}
 
 	@Override
-	public List<Event> load(UUID aggregateId) throws ClassNotFoundException, InstantiationException, IllegalAccessException, SerializeException {
-		List<TradeEntity> l = mapEvents.get(aggregateId);
-		if (CollectionUtils.isEmpty(l)) {
-			l = tradeRepository.loadByAggregateId(aggregateId.toString());
+	public List<Event> load(String aggregateId) throws ClassNotFoundException {
+		List<TradeEntity> tradeEntityList = mapTradeEntity.get(aggregateId);
+		if (CollectionUtils.isEmpty(tradeEntityList)) {
+			tradeEntityList = tradeRepository.loadByAggregateId(aggregateId.toString());
 		}
-		//List<TradeEntity> l = tradeRepository.loadByAggregateId(aggregateId.toString());
-		if(CollectionUtils.isNotEmpty(l)) {
+		return transformTradeEntityListToEventList(tradeEntityList);
+	}
+	
+	private List<Event> transformTradeEntityListToEventList(List<TradeEntity> tradeEntityList) throws ClassNotFoundException{
+		if(CollectionUtils.isNotEmpty(tradeEntityList)) {
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();
-			for(TradeEntity te : l) {
+			for(TradeEntity te : tradeEntityList) {
 				Class<?> clazz = Class.forName(te.getPayloadType());
-				Event e;
+				Event e=null;
 				try {
 					if(clazz.equals(TradeReceivedEvent.class)) {
 						e = (TradeReceivedEvent) map.readValue(te.getPayload(), clazz);
-					}else {
+					}else if(clazz.equals(TradeSentEvent.class)) {
+						e = (TradeSentEvent) map.readValue(te.getPayload(), clazz);
+					}else if(clazz.equals(TradeCfinRetrievedEvent.class)){
 						e = (TradeCfinRetrievedEvent) map.readValue(te.getPayload(), clazz);
+					}else {
+						new UnknownEventException(te.getAggregateIdentifier(),te.getPayloadType());
 					}
 					eventList.add(e);
 				}catch(JsonProcessingException ex) {
-					throw new SerializeException(aggregateId);
+					throw new DeserializeException(te.getAggregateIdentifier(),te.getPayloadType());
 				}
 			}
 			return eventList;
 		}
 		return emptyList();
 	}
-
+	@Override
+	public List<Event> loadAllNotSentEvents() throws ClassNotFoundException{
+		return transformTradeEntityListToEventList(tradeRepository.loadAllNotSentEvents());
+	}
 }
