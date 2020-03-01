@@ -3,16 +3,16 @@ package fr.fredos.dvdtheque.event.sourcing.demo.trade.service;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,12 +28,12 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
 @SpringBootTest(classes = { fr.fredos.dvdtheque.event.sourcing.demo.EventSourcingSpringBootApplication.class })
 @ActiveProfiles("jpa")
 public class TradeServiceImplTest {
-
+	protected Logger logger = LoggerFactory.getLogger(TradeServiceImplTest.class);
 	@Autowired
 	TradeService tradeService;
 
 	@Test
-	void tradeReceiveCommandInOneProcessTest() throws TradeNotFoundException, SerializeException,
+	void processReceiveCommandInOneProcessTest() throws TradeNotFoundException, SerializeException,
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
 		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
@@ -48,11 +48,29 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
 		long end = new Date().getTime() - start;
-		System.out.println("Finished tradeReceiveCommandInOneProcessTest in " + end + " ms");
+		logger.info("Finished tradeReceiveCommandInOneProcessTest in " + end + " ms");
 	}
 
 	@Test
-	void tradeReceiveCommandTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
+	void processReceiveCommandTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
+			InstantiationException, IllegalAccessException {
+		long start = new Date().getTime();
+		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
+		Trade trade = tradeService.process(command);
+		assertNotNull(trade);
+		assertNotNull(trade.getId());
+		assertNotNull(trade.getTradeId());
+		assertNotNull(trade.getIsin());
+		assertNotNull(trade.getCcy());
+		assertNotNull(trade.getPrice());
+		assertNotNull(trade.getQuantity());
+		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
+		long end = new Date().getTime() - start;
+		logger.info("Finished tradeReceiveCommandTest in " + end + " ms");
+	}
+	
+	@Test
+	void processReceiveCommandAndSearchCfinCommandTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
 			InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
 		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
@@ -79,16 +97,24 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
 		long end = new Date().getTime() - start;
-		System.out.println("Finished tradeReceiveCommandTest in " + end + " ms");
+		logger.info("Finished tradeReceiveCommandTest in " + end + " ms");
 	}
 
+	@Test
+	void replayAllNotSentEvents() throws ClassNotFoundException {
+		long start = new Date().getTime();
+		tradeService.replayAllNotSentEvents();
+		long end = new Date().getTime() - start;
+		logger.info("Finished replayAllNotSentEvents in " + end + " ms ");
+	}
+	
 	@Test
 	void loadAllNotSentTradeEntities() throws ClassNotFoundException {
 		long start = new Date().getTime();
 		List<Event> l = tradeService.loadAllNotSentEvents();
-		assertTrue(CollectionUtils.isNotEmpty(l));
+		//assertTrue(CollectionUtils.isNotEmpty(l));
 		long end = new Date().getTime() - start;
-		System.out.println("Finished tradeReceiveCommandTest in " + end + " ms and retrieved l.size()=" + l.size());
+		logger.info("Finished loadAllNotSentTradeEntities in " + end + " ms and retrieved l.size()=" + l.size());
 		/*l.forEach(event -> {
 			if(event != null) {
 				System.out.println(event.toString());
@@ -97,11 +123,11 @@ public class TradeServiceImplTest {
 	}
 
 	@Test
-	void tradeReceiveCommandMultiThreadTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
+	void processReceiveCommandMultiThreadTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
 			InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 800; i++) {
+		for (int i = 0; i < 1000; i++) {
 			executor.execute(new MyRunnable(tradeService));
 		}
 		executor.shutdown();
@@ -109,7 +135,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		System.out.println("Finished all threads in " + end + " ms");
+		logger.info("Finished all threads in " + end + " ms");
 	}
 
 	public class MyRunnable implements Runnable {
@@ -174,11 +200,11 @@ public class TradeServiceImplTest {
 	}
 
 	@Test
-	void tradeReceiveCommandInOneProcessMultiThreadTest() throws TradeNotFoundException, SerializeException,
+	void processReceiveCommandInOneTransactionMultiThreadTest() throws TradeNotFoundException, SerializeException,
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 100; i++) {
 			executor.execute(new MyRunnableInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -186,7 +212,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		System.out.println("Finished all threads in " + end + " ms");
+		logger.info("Finished all threads in " + end + " ms");
 	}
 
 	public class MyRunnableInOneTransaction implements Runnable {
@@ -224,7 +250,7 @@ public class TradeServiceImplTest {
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < 5000; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();
@@ -232,7 +258,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		System.out.println("Finished all threads in " + end + " ms");
+		logger.info("Finished all threads in " + end + " ms");
 	}
 	
 	public class MyRunnableNotSent implements Runnable {

@@ -2,7 +2,7 @@ package fr.fredos.dvdtheque.event.sourcing.demo.commands;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class TradeSearchCfinCommand {
+public class TradeSearchCfinCommand implements TradeCommand{
 	private final String id;
 	private final String isin;
 	private final String ccy;

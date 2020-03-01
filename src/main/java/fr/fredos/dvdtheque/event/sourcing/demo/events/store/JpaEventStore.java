@@ -29,7 +29,6 @@ import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.UnknownEventException;
 @Component("jpaEventStore")
 public class JpaEventStore implements EventStore{
-
 	@Autowired
 	TradeRepository tradeRepository;
 	private IMap<String, List<TradeEntity>> mapTradeEntity;

@@ -1,10 +1,8 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
 public class TradeCfinRetrievedEvent extends Event{
