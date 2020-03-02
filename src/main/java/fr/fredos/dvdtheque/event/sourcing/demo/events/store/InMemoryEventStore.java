@@ -40,4 +40,10 @@ public class InMemoryEventStore implements EventStore {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public List<Event> loadAllEvents() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -18,11 +18,12 @@ import io.micrometer.core.lang.NonNull;
 @Table(name = "DOMAIN_EVENT_ENTRY")
 public class TradeEntity implements Serializable{
 	private static final long serialVersionUID = -14288181758812657L;
-	@Id
+	/*@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "next_val")
 	@SequenceGenerator(name="next_val", sequenceName = "next_val")
 	@Column(name = "GLOBAL_INDEX", updatable = false, nullable = false)
-	public Integer globalIndex;
+	public Integer globalIndex;*/
+	@Id
 	@Column(name = "EVENT_IDENTIFIER")
 	@NotNull
 	private String eventIdentifier;
@@ -69,10 +70,10 @@ public class TradeEntity implements Serializable{
 	public void setEventIdentifier(String eventIdentifier) {
 		this.eventIdentifier = eventIdentifier;
 	}
-
+/*
 	public Integer getGlobalIndex() {
 		return globalIndex;
-	}
+	}*/
 
 	public String getPayload() {
 		return payload;
@@ -93,10 +94,10 @@ public class TradeEntity implements Serializable{
 	public String getType() {
 		return type;
 	}
-
+/*
 	public void setGlobalIndex(Integer globalIndex) {
 		this.globalIndex = globalIndex;
-	}
+	}*/
 
 	public void setPayload(String payload) {
 		this.payload = payload;
@@ -153,7 +154,7 @@ public class TradeEntity implements Serializable{
 
 	@Override
 	public String toString() {
-		return "TradeEntity [globalIndex=" + globalIndex + ", eventIdentifier=" + eventIdentifier + ", payload="
+		return "TradeEntity [globalIndex=" + /*globalIndex +*/ ", eventIdentifier=" + eventIdentifier + ", payload="
 				+ payload + ", payloadType=" + payloadType + ", aggregateIdentifier=" + aggregateIdentifier
 				+ ", sequenceNumber=" + sequenceNumber + ", type=" + type + "]";
 	}

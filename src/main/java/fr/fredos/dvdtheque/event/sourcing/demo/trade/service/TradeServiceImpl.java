@@ -43,7 +43,7 @@ public class TradeServiceImpl implements TradeService {
 		map.put(TradeReceivedEvent.class, TradeSearchCfinCommand.class);
 	}
 
-	private Trade jumpToNextCommand(Trade trade) throws ClassNotFoundException {
+	private Trade jumpToNextCommand(Trade trade){
 		Event event = trade.getNewEvents().get(0);
 		Class<? extends TradeCommand> nextCommand = map.get(event.getClass());
 		if(nextCommand.equals(TradeSendCommand.class)) {
@@ -74,7 +74,7 @@ public class TradeServiceImpl implements TradeService {
 		return trade;
 	}
 
-	public Optional<Trade> loadTrade(String id) throws ClassNotFoundException {
+	public Optional<Trade> loadTrade(String id){
 		List<Event> eventStream = jpaEventStore.load(id);
 		if (eventStream.isEmpty())
 			return Optional.empty();
@@ -82,12 +82,12 @@ public class TradeServiceImpl implements TradeService {
 	}
 
 	@Override
-	public Trade processInOneTransaction(TradeSendCommand command) throws ClassNotFoundException {
+	public Trade processInOneTransaction(TradeSendCommand command) {
 		logger.debug("processing TradeSendCommand with id=" + command.getId());
 		return process(command.getId(), trade -> trade.send(command.getId()));
 	}
 	@Override
-	public Trade processInOneTransaction(TradeSearchCfinCommand command) throws ClassNotFoundException {
+	public Trade processInOneTransaction(TradeSearchCfinCommand command) {
 		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
 		return process(command.getId(),
 				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
@@ -108,7 +108,7 @@ public class TradeServiceImpl implements TradeService {
 		return process(command.getId(), trade -> trade.send(command.getId()));
 	}
 
-	private Trade process(String id, Consumer<Trade> consumer) throws ClassNotFoundException {
+	private Trade process(String id, Consumer<Trade> consumer) {
 
 		/*
 		 * return conflictRetrier.get(() -> { Optional<Trade> possibleTrade =
@@ -129,7 +129,7 @@ public class TradeServiceImpl implements TradeService {
 	}
 
 	@Override
-	public void replayAllNotSentEvents() throws ClassNotFoundException {
+	public void replayAllNotSentEvents(){
 		List<Event> eventsList = loadAllNotSentEvents();
 		if (CollectionUtils.isNotEmpty(eventsList)) {
 			eventsList.forEach(event -> {
@@ -154,7 +154,12 @@ public class TradeServiceImpl implements TradeService {
 	}
 
 	@Override
-	public List<Event> loadAllNotSentEvents() throws ClassNotFoundException {
+	public List<Event> loadAllNotSentEvents() {
+		return jpaEventStore.loadAllNotSentEvents();
+	}
+	
+	@Override
+	public List<Event> loadAllEvents() {
 		return jpaEventStore.loadAllNotSentEvents();
 	}
 }

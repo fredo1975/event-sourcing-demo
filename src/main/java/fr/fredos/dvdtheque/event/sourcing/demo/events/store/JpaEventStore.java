@@ -11,6 +11,8 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +32,7 @@ import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.UnknownEventException;
 @Component("jpaEventStore")
 public class JpaEventStore implements EventStore{
+	protected Logger logger = LoggerFactory.getLogger(JpaEventStore.class);
 	@Autowired
 	TradeRepository tradeRepository;
 	private IMap<String, List<TradeEntity>> mapTradeEntity;
@@ -75,7 +78,7 @@ public class JpaEventStore implements EventStore{
 	}
 
 	@Override
-	public List<Event> load(String aggregateId) throws ClassNotFoundException {
+	public List<Event> load(String aggregateId){
 		List<TradeEntity> tradeEntityList = mapTradeEntity.get(aggregateId);
 		if (CollectionUtils.isEmpty(tradeEntityList)) {
 			tradeEntityList = tradeRepository.loadByAggregateId(aggregateId.toString());
@@ -83,14 +86,14 @@ public class JpaEventStore implements EventStore{
 		return transformTradeEntityListToEventList(tradeEntityList);
 	}
 	
-	private List<Event> transformTradeEntityListToEventList(List<TradeEntity> tradeEntityList) throws ClassNotFoundException{
+	private List<Event> transformTradeEntityListToEventList(List<TradeEntity> tradeEntityList) {
 		if(CollectionUtils.isNotEmpty(tradeEntityList)) {
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();
 			for(TradeEntity te : tradeEntityList) {
-				Class<?> clazz = Class.forName(te.getPayloadType());
 				Event e=null;
 				try {
+					Class<?> clazz = Class.forName(te.getPayloadType());
 					if(clazz.equals(TradeReceivedEvent.class)) {
 						e = (TradeReceivedEvent) map.readValue(te.getPayload(), clazz);
 					}else if(clazz.equals(TradeSentEvent.class)) {
@@ -103,6 +106,8 @@ public class JpaEventStore implements EventStore{
 					eventList.add(e);
 				}catch(JsonProcessingException ex) {
 					throw new DeserializeException(te.getAggregateIdentifier(),te.getPayloadType());
+				}catch(ClassNotFoundException ce) {
+					logger.error(ce.getException().getMessage());
 				}
 			}
 			return eventList;
@@ -110,7 +115,11 @@ public class JpaEventStore implements EventStore{
 		return emptyList();
 	}
 	@Override
-	public List<Event> loadAllNotSentEvents() throws ClassNotFoundException{
+	public List<Event> loadAllNotSentEvents(){
 		return transformTradeEntityListToEventList(tradeRepository.loadAllNotSentEvents());
+	}
+	@Override
+	public List<Event> loadAllEvents() {
+		return transformTradeEntityListToEventList(tradeRepository.loadAllEvents());
 	}
 }

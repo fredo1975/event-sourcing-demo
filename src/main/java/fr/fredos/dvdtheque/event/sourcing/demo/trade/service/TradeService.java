@@ -16,6 +16,7 @@ public interface TradeService {
 	Trade processInOneTransaction(TradeReceiveCommand command) throws ClassNotFoundException;
 	Trade processInOneTransaction(TradeSearchCfinCommand command) throws ClassNotFoundException;
 	Trade processInOneTransaction(TradeSendCommand command) throws ClassNotFoundException;
-	List<Event> loadAllNotSentEvents() throws ClassNotFoundException;
-	void replayAllNotSentEvents() throws ClassNotFoundException;
+	List<Event> loadAllNotSentEvents();
+	void replayAllNotSentEvents();
+	List<Event> loadAllEvents();
 }

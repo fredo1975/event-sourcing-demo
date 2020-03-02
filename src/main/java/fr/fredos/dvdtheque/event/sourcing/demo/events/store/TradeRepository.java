@@ -22,4 +22,6 @@ public interface TradeRepository extends CrudRepository<TradeEntity, Long>{
 			"AND payload_type<>'fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeSentEvent' ",
 			nativeQuery = true)
 	List<TradeEntity> loadAllNotSentEvents();
+	@Query("SELECT tradeEntity FROM TradeEntity tradeEntity")
+	List<TradeEntity> loadAllEvents();
 }

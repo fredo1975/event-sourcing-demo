@@ -101,6 +101,33 @@ public class TradeServiceImplTest {
 	}
 	
 	@Test
+	void chainProcess() {
+		ExecutorService executor = Executors.newFixedThreadPool(5);
+		long start = new Date().getTime();
+		for (int i = 0; i < 150; i++) {
+			executor.execute(new MyRunnableNotSent(tradeService));
+		}
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+			// System.out.println("waiting for finish ...");
+		}
+		long end = new Date().getTime() - start;
+		logger.info("Finished all threads in " + end + " ms");
+		
+		
+		long start2 = new Date().getTime();
+		List<Event> l = tradeService.loadAllNotSentEvents();
+		//assertTrue(CollectionUtils.isNotEmpty(l));
+		long end2 = new Date().getTime() - start2;
+		logger.info("Finished loadAllNotSentTradeEntities in " + end2 + " ms and retrieved l.size()=" + l.size());
+		
+		long start3 = new Date().getTime();
+		tradeService.replayAllNotSentEvents();
+		long end3 = new Date().getTime() - start3;
+		logger.info("Finished replayAllNotSentEvents in " + end3 + " ms ");
+	}
+	
+	@Test
 	void loadAllNotSentTradeEntities() throws ClassNotFoundException {
 		long start = new Date().getTime();
 		List<Event> l = tradeService.loadAllNotSentEvents();
@@ -189,7 +216,7 @@ public class TradeServiceImplTest {
 	void processReceiveCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 1000; i++) {
 			executor.execute(new MyRunnableInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -229,10 +256,10 @@ public class TradeServiceImplTest {
 	}
 	
 	@Test
-	void tradeNotSentInOneProcessMultiThreadTest() throws ClassNotFoundException {
+	void processNotSentInOneProcessMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 50; i++) {
+		for (int i = 0; i < 1200; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();
