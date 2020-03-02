@@ -39,7 +39,6 @@ public class JpaEventStore implements EventStore{
 		mapTradeEntity = instance.getMap("events");
 	}
 	
-	
 	@Override
 	public void store(String aggregateId, List<Event> newEvents, int baseVersion){
 		TradeEntity entity = new TradeEntity(aggregateId);

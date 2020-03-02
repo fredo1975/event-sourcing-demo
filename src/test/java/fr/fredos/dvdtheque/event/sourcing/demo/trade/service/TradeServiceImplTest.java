@@ -36,11 +36,9 @@ public class TradeServiceImplTest {
 	void processReceiveCommandInOneProcessTest() throws TradeNotFoundException, SerializeException,
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
-		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
-		Trade trade = tradeService.processInOneTransaction(command);
+		Trade trade = tradeService.processInOneTransaction(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
-		assertNotNull(trade.getTradeId());
 		assertNotNull(trade.getIsin());
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
@@ -55,11 +53,9 @@ public class TradeServiceImplTest {
 	void processReceiveCommandTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
 			InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
-		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
-		Trade trade = tradeService.process(command);
+		Trade trade = tradeService.process(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
-		assertNotNull(trade.getTradeId());
 		assertNotNull(trade.getIsin());
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
@@ -73,23 +69,19 @@ public class TradeServiceImplTest {
 	void processReceiveCommandAndSearchCfinCommandTest() throws TradeNotFoundException, SerializeException, ClassNotFoundException,
 			InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
-		TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
-		Trade trade = tradeService.process(command);
+		Trade trade = tradeService.process(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
-		assertNotNull(trade.getTradeId());
 		assertNotNull(trade.getIsin());
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
 
-		TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
-				trade.getCcy());
-		trade = tradeService.process(tradeSearchCfinCommand);
+		trade = tradeService.process( new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
+				trade.getCcy()));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
-		assertNotNull(trade.getTradeId());
 		assertNotNull(trade.getIsin());
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
@@ -147,33 +139,29 @@ public class TradeServiceImplTest {
 
 		@Override
 		public void run() {
-			TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
-					50);
 			Trade trade = null;
 			try {
-				trade = tradeService.process(command);
+				trade = tradeService.process(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
+						50));
 			} catch (SerializeException e) {
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
 
-			TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
-					trade.getCcy());
 			try {
-				trade = tradeService.process(tradeSearchCfinCommand);
+				trade = tradeService.process(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
+						trade.getCcy()));
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
@@ -181,15 +169,13 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getCfin());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
 			
-			TradeSendCommand tradeSendCommand = new TradeSendCommand(trade.getId());
 			try {
-				trade = tradeService.process(tradeSendCommand);
+				trade = tradeService.process(new TradeSendCommand(trade.getId()));
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
@@ -224,18 +210,16 @@ public class TradeServiceImplTest {
 
 		@Override
 		public void run() {
-			TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
-					50);
 			Trade trade = null;
 			try {
-				trade = tradeService.processInOneTransaction(command);
+				trade = tradeService.processInOneTransaction(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
+						50));
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
@@ -250,7 +234,7 @@ public class TradeServiceImplTest {
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 5000; i++) {
+		for (int i = 0; i < 50; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();
@@ -270,28 +254,24 @@ public class TradeServiceImplTest {
 
 		@Override
 		public void run() {
-			TradeReceiveCommand command = new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50);
-			Trade trade = tradeService.process(command);
+			Trade trade = tradeService.process(new TradeReceiveCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
 
-			TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
-					trade.getCcy());
 			try {
-				trade = tradeService.process(tradeSearchCfinCommand);
+				trade = tradeService.process(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
+						trade.getCcy()));
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
-			assertNotNull(trade.getTradeId());
 			assertNotNull(trade.getIsin());
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());

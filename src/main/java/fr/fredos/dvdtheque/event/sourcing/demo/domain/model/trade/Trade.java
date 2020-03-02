@@ -10,15 +10,13 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Aggregate;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
 public class Trade extends Aggregate{
-	private String tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
     private String cfin;
-    public Trade(String  id, String tradeId, String isin, String ccy, double price, int quantity) {
+    public Trade(String  id, String isin, String ccy, double price, int quantity) {
         super(id);
-        validateID(tradeId);
         validateIsin(isin);
         validateCcy(isin);
         validatePrice(price);
@@ -47,7 +45,6 @@ public class Trade extends Aggregate{
 
     @SuppressWarnings("unused")
     public void apply(TradeReceivedEvent event) {
-    	this.tradeId = event.getTradeId();
     	this.isin = event.getIsin();
         this.ccy = event.getCcy();
         this.price = event.getPrice();
@@ -63,10 +60,6 @@ public class Trade extends Aggregate{
     private void apply(TradeSentEvent event) {
         //this.cfin = event.getCfin();
     }
-
-	public String getTradeId() {
-		return tradeId;
-	}
 
 	public String getIsin() {
 		return isin;
@@ -87,10 +80,6 @@ public class Trade extends Aggregate{
 	public String getCfin() {
 		return cfin;
 	}
-
-	private void validateID(String id) {
-		checkNotNull(id);
-    }
 
     private void validateIsin(String isin) {
         checkNotNull(StringUtils.isNotBlank(isin));

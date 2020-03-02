@@ -1,7 +1,5 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.trade.service;
 
-import static java.util.UUID.randomUUID;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,26 +47,19 @@ public class TradeServiceImpl implements TradeService {
 		Event event = trade.getNewEvents().get(0);
 		Class<? extends TradeCommand> nextCommand = map.get(event.getClass());
 		if(nextCommand.equals(TradeSendCommand.class)) {
-			TradeSendCommand tradeSendCommand = new TradeSendCommand(trade.getId());
-			return processInOneTransaction(tradeSendCommand);
+			return processInOneTransaction(new TradeSendCommand(trade.getId()));
 		}else if (nextCommand.equals(TradeSearchCfinCommand.class)) {
-			TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
-					trade.getCcy());
-			trade = processInOneTransaction(tradeSearchCfinCommand);
-		} else if (nextCommand.equals(TradeSendCommand.class)) {
-			TradeSendCommand tradeSendCommand = new TradeSendCommand(trade.getId());
-			trade = processInOneTransaction(tradeSendCommand);
+			trade = processInOneTransaction(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
 		}else {
 			throw new NextCommandNotFoundException(trade.getId(),nextCommand);
 		}
 		return jumpToNextCommand(trade);
 	}
-
+	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public Trade processInOneTransaction(TradeReceiveCommand command) throws ClassNotFoundException {
-		Trade trade = new Trade(randomUUID().toString(), command.getTradeId(), command.getIsin(), command.getCcy(),
-				command.getPrice(), command.getQuantity());
+		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),command.getPrice(),command.getQuantity());
 		storeEvents(trade);
 		return jumpToNextCommand(trade);
 	}
@@ -76,7 +67,7 @@ public class TradeServiceImpl implements TradeService {
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public Trade process(TradeReceiveCommand command) throws SerializeException {
-		Trade trade = new Trade(randomUUID().toString(), command.getTradeId(), command.getIsin(), command.getCcy(),
+		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),
 				command.getPrice(), command.getQuantity());
 		logger.debug("processing TradeReceiveCommand with id=" + trade.getId());
 		storeEvents(trade);
@@ -90,6 +81,18 @@ public class TradeServiceImpl implements TradeService {
 		return Optional.of(new Trade(id, eventStream));
 	}
 
+	@Override
+	public Trade processInOneTransaction(TradeSendCommand command) throws ClassNotFoundException {
+		logger.debug("processing TradeSendCommand with id=" + command.getId());
+		return process(command.getId(), trade -> trade.send(command.getId()));
+	}
+	@Override
+	public Trade processInOneTransaction(TradeSearchCfinCommand command) throws ClassNotFoundException {
+		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
+		return process(command.getId(),
+				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
+	}
+	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public Trade process(TradeSearchCfinCommand command) throws ClassNotFoundException {
@@ -103,19 +106,6 @@ public class TradeServiceImpl implements TradeService {
 	public Trade process(TradeSendCommand command) throws ClassNotFoundException {
 		logger.debug("processing TradeSendCommand with id=" + command.getId());
 		return process(command.getId(), trade -> trade.send(command.getId()));
-	}
-
-	@Override
-	public Trade processInOneTransaction(TradeSendCommand command) throws ClassNotFoundException {
-		logger.debug("processing TradeSendCommand with id=" + command.getId());
-		return process(command.getId(), trade -> trade.send(command.getId()));
-	}
-
-	@Override
-	public Trade processInOneTransaction(TradeSearchCfinCommand command) throws ClassNotFoundException {
-		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
-		return process(command.getId(),
-				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
 	}
 
 	private Trade process(String id, Consumer<Trade> consumer) throws ClassNotFoundException {
@@ -144,26 +134,17 @@ public class TradeServiceImpl implements TradeService {
 		if (CollectionUtils.isNotEmpty(eventsList)) {
 			eventsList.forEach(event -> {
 				if (event instanceof TradeReceivedEvent) {
-					TradeReceivedEvent e = (TradeReceivedEvent) event;
-					TradeSearchCfinCommand tradeSearchCfinCommand = new TradeSearchCfinCommand(event.getAggregateId(),
-							((TradeReceivedEvent) event).getIsin(), ((TradeReceivedEvent) event).getCcy());
 					Trade trade = null;
 					try {
-						trade = process(tradeSearchCfinCommand);
-					} catch (ClassNotFoundException e1) {
-						e1.printStackTrace();
-					}
-					TradeSendCommand tradeSendCommand = new TradeSendCommand(event.getAggregateId());
-					try {
-						process(tradeSendCommand);
+						trade = process(new TradeSearchCfinCommand(event.getAggregateId(),
+								((TradeReceivedEvent) event).getIsin(), ((TradeReceivedEvent) event).getCcy()));
+						jumpToNextCommand(trade);
 					} catch (ClassNotFoundException e1) {
 						e1.printStackTrace();
 					}
 				} else if (event instanceof TradeCfinRetrievedEvent) {
-					TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent) event;
-					TradeSendCommand command = new TradeSendCommand(event.getAggregateId());
 					try {
-						process(command);
+						process(new TradeSendCommand(event.getAggregateId()));
 					} catch (ClassNotFoundException e1) {
 						e1.printStackTrace();
 					}
