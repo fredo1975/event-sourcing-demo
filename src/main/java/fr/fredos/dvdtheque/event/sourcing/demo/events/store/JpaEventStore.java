@@ -4,6 +4,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +46,7 @@ public class JpaEventStore implements EventStore{
 		entity.setSequenceNumber(Integer.valueOf(baseVersion));
 		entity.setAggregateIdentifier(aggregateId);
 		entity.setEventIdentifier(randomUUID().toString());
+		entity.setTimeStamp(ZonedDateTime.now());
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
 		try {

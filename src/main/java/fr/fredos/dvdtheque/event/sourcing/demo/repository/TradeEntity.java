@@ -1,6 +1,7 @@
 package fr.fredos.dvdtheque.event.sourcing.demo.repository;
 
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -10,6 +11,8 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+
+import io.micrometer.core.lang.NonNull;
 
 @Entity
 @Table(name = "DOMAIN_EVENT_ENTRY")
@@ -23,7 +26,8 @@ public class TradeEntity implements Serializable{
 	@Column(name = "EVENT_IDENTIFIER")
 	@NotNull
 	private String eventIdentifier;
-	@Column(name = "PAYLOAD", columnDefinition="BLOB")
+	@Column(name = "PAYLOAD")
+	@NotNull
 	private String payload;
 	@Column(name = "PAYLOAD_TYPE")
 	@NotNull
@@ -36,6 +40,9 @@ public class TradeEntity implements Serializable{
 	private Integer sequenceNumber;
 	@Column(name = "TYPE")
 	private String type;
+	@Column(name = "TIMESTAMP")
+	@NotNull
+	private ZonedDateTime timeStamp;
 	
 	protected TradeEntity() {
 	}
@@ -48,10 +55,12 @@ public class TradeEntity implements Serializable{
 			final Integer sequenceNumber,
 			final String eventIdentifier,
 			final String payload,
-			final String payloadType) {
+			final String payloadType,
+			final ZonedDateTime timeStamp) {
 		super();
 		this.aggregateIdentifier = aggregateIdentifier;
 		this.sequenceNumber = sequenceNumber;
+		this.timeStamp = timeStamp;
 	}
 	public String getEventIdentifier() {
 		return eventIdentifier;
@@ -107,6 +116,14 @@ public class TradeEntity implements Serializable{
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public ZonedDateTime getTimeStamp() {
+		return timeStamp;
+	}
+
+	public void setTimeStamp(ZonedDateTime timeStamp) {
+		this.timeStamp = timeStamp;
 	}
 
 	@Override
