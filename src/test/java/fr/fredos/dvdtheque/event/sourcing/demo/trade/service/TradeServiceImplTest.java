@@ -104,7 +104,7 @@ public class TradeServiceImplTest {
 	void chainProcess() {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 150; i++) {
+		for (int i = 0; i < 15; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();
@@ -146,7 +146,7 @@ public class TradeServiceImplTest {
 			InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			executor.execute(new MyRunnable(tradeService));
 		}
 		executor.shutdown();
@@ -154,7 +154,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished all threads in " + end + " ms");
+		logger.info("Finished processReceiveCommandMultiThreadTest all threads in " + end + " ms");
 	}
 
 	public class MyRunnable implements Runnable {
@@ -216,7 +216,7 @@ public class TradeServiceImplTest {
 	void processReceiveCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			executor.execute(new MyRunnableInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -224,7 +224,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished all threads in " + end + " ms");
+		logger.info("Finished processReceiveCommandInOneTransactionMultiThreadTest all threads in " + end + " ms");
 	}
 
 	public class MyRunnableInOneTransaction implements Runnable {
@@ -259,7 +259,7 @@ public class TradeServiceImplTest {
 	void processNotSentInOneProcessMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1200; i++) {
+		for (int i = 0; i < 12; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();
@@ -267,7 +267,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished all threads in " + end + " ms");
+		logger.info("Finished processNotSentInOneProcessMultiThreadTest all threads in " + end + " ms");
 	}
 	
 	public class MyRunnableNotSent implements Runnable {
