@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TradeMapper">
+	<resultMap id="EventResultMap"
+		type="fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeDbObject">
+		<id property="eventIdentifier" column="event_identifier" />
+		<result column="aggregate_identifier" jdbcType="VARCHAR"
+			property="aggregateIdentifier" />
+		<result column="event_identifier" jdbcType="VARCHAR"
+			property="eventIdentifier" />
+		<result column="payload" jdbcType="VARCHAR" property="payload" />
+		<result column="payload_type" jdbcType="VARCHAR"
+			property="payloadType" />
+		<result column="sequence_number" jdbcType="NUMERIC"
+			property="sequenceNumber" />
+		<result column="timestamp" jdbcType="TIMESTAMP"
+			property="timestamp" />
+	</resultMap>
+	<insert id="save"
+		parameterType="fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeDbObject">
+		insert into domain_event_entry
+		(aggregate_identifier,event_identifier,payload,payload_type,sequence_number,timestamp)
+		values
+		(#{aggregateIdentifier},#{eventIdentifier},#{payload},#{payloadType},#{sequenceNumber},#{timestamp})
+	</insert>
+	<select id="loadByAggregateId" parameterType="String"
+		resultMap="EventResultMap">
+		SELECT * FROM domain_event_entry WHERE aggregate_identifier = #{aggregateIdentifier}
+	</select>
+	<select id="loadAllNotSentEvents"
+		resultMap="EventResultMap">
+		SELECT * FROM domain_event_entry INNER JOIN (
+		SELECT
+		MAX(sequence_number) AS m,aggregate_identifier as id FROM
+		domain_event_entry GROUP BY aggregate_identifier) temp ON
+		temp.id=aggregate_identifier
+		AND sequence_number = m
+		AND payload_type<![CDATA[ <> ]]>'fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeSentEvent'
+	</select>
+	<select id="loadAllEvents"
+		resultMap="EventResultMap">
+		SELECT
+		aggregate_identifier,event_identifier,payload,payload_type,sequence_number,timestamp
+		FROM domain_event_entry
+	</select>
+
+</mapper>

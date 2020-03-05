@@ -4,7 +4,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,19 +23,22 @@ import com.hazelcast.core.IMap;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrieveFailedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeSentEvent;
-import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeEntity;
+import fr.fredos.dvdtheque.event.sourcing.demo.mybatis.dao.TradeDao;
+import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeDbObject;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.DeserializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.UnknownEventException;
 @Component("jpaEventStore")
-public class JpaEventStore implements EventStore{
-	protected Logger logger = LoggerFactory.getLogger(JpaEventStore.class);
+public class DbEventStore implements EventStore{
+	protected Logger logger = LoggerFactory.getLogger(DbEventStore.class);
 	@Autowired
-	TradeRepository tradeRepository;
-	private IMap<String, List<TradeEntity>> mapTradeEntity;
+	TradeDao tradeDao;
+	
+	private IMap<String, List<TradeDbObject>> mapTradeEntity;
 	@Autowired
 	private HazelcastInstance instance;
 	@PostConstruct
@@ -45,11 +48,11 @@ public class JpaEventStore implements EventStore{
 	
 	@Override
 	public void store(String aggregateId, List<Event> newEvents, int baseVersion){
-		TradeEntity entity = new TradeEntity(aggregateId);
+		TradeDbObject entity = new TradeDbObject(aggregateId);
 		entity.setSequenceNumber(Integer.valueOf(baseVersion));
 		entity.setAggregateIdentifier(aggregateId);
 		entity.setEventIdentifier(randomUUID().toString());
-		entity.setTimeStamp(ZonedDateTime.now());
+		entity.setTimestamp(LocalDateTime.now());
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
 		try {
@@ -62,16 +65,19 @@ public class JpaEventStore implements EventStore{
 			}else if(event instanceof TradeCfinRetrievedEvent){
 				TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
 				entity.setPayload(map.writeValueAsString(e));
+			}else if(event instanceof TradeCfinRetrieveFailedEvent){
+				TradeCfinRetrieveFailedEvent e = (TradeCfinRetrieveFailedEvent)event;
+				entity.setPayload(map.writeValueAsString(e));
 			}
 			entity.setPayloadType(event.getClass().getTypeName());
-			List<TradeEntity> l = mapTradeEntity.get(aggregateId.toString());
+			List<TradeDbObject> l = mapTradeEntity.get(aggregateId.toString());
 			if (CollectionUtils.isEmpty(l)) {
 				mapTradeEntity.put(aggregateId.toString(), newArrayList(entity));
 			}else {
 				l.add(entity);
 				mapTradeEntity.put(aggregateId.toString(), l);
 			}
-			tradeRepository.save(entity);
+			tradeDao.save(entity);
 		}catch(JsonProcessingException e) {
 			throw new SerializeException(aggregateId.toString(),event.getClass().getTypeName());
 		}
@@ -79,18 +85,18 @@ public class JpaEventStore implements EventStore{
 
 	@Override
 	public List<Event> load(String aggregateId){
-		List<TradeEntity> tradeEntityList = mapTradeEntity.get(aggregateId);
+		List<TradeDbObject> tradeEntityList = mapTradeEntity.get(aggregateId);
 		if (CollectionUtils.isEmpty(tradeEntityList)) {
-			tradeEntityList = tradeRepository.loadByAggregateId(aggregateId.toString());
+			tradeEntityList = tradeDao.loadByAggregateId(aggregateId.toString());
 		}
 		return transformTradeEntityListToEventList(tradeEntityList);
 	}
 	
-	private List<Event> transformTradeEntityListToEventList(List<TradeEntity> tradeEntityList) {
+	private List<Event> transformTradeEntityListToEventList(List<TradeDbObject> tradeEntityList) {
 		if(CollectionUtils.isNotEmpty(tradeEntityList)) {
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();
-			for(TradeEntity te : tradeEntityList) {
+			for(TradeDbObject te : tradeEntityList) {
 				Event e=null;
 				try {
 					Class<?> clazz = Class.forName(te.getPayloadType());
@@ -100,6 +106,8 @@ public class JpaEventStore implements EventStore{
 						e = (TradeSentEvent) map.readValue(te.getPayload(), clazz);
 					}else if(clazz.equals(TradeCfinRetrievedEvent.class)){
 						e = (TradeCfinRetrievedEvent) map.readValue(te.getPayload(), clazz);
+					}else if(clazz.equals(TradeCfinRetrieveFailedEvent.class)){
+						e = (TradeCfinRetrieveFailedEvent) map.readValue(te.getPayload(), clazz);
 					}else {
 						new UnknownEventException(te.getAggregateIdentifier(),te.getPayloadType());
 					}
@@ -116,10 +124,10 @@ public class JpaEventStore implements EventStore{
 	}
 	@Override
 	public List<Event> loadAllNotSentEvents(){
-		return transformTradeEntityListToEventList(tradeRepository.loadAllNotSentEvents());
+		return transformTradeEntityListToEventList(tradeDao.loadAllNotSentEvents());
 	}
 	@Override
 	public List<Event> loadAllEvents() {
-		return transformTradeEntityListToEventList(tradeRepository.loadAllEvents());
+		return transformTradeEntityListToEventList(tradeDao.loadAllEvents());
 	}
 }

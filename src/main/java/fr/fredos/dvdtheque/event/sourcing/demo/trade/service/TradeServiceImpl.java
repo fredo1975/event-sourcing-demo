@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchFailCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
@@ -49,7 +50,12 @@ public class TradeServiceImpl implements TradeService {
 		if(nextCommand.equals(TradeSendCommand.class)) {
 			return processInOneTransaction(new TradeSendCommand(trade.getId()));
 		}else if (nextCommand.equals(TradeSearchCfinCommand.class)) {
-			trade = processInOneTransaction(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
+			try {
+				trade = processInOneTransaction(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
+			}catch(RuntimeException e) {
+				return processInOneTransaction(new TradeSearchFailCfinCommand(trade.getId(), e.getMessage()));
+			}
+			
 		}else {
 			throw new NextCommandNotFoundException(trade.getId(),nextCommand);
 		}
@@ -89,8 +95,17 @@ public class TradeServiceImpl implements TradeService {
 	@Override
 	public Trade processInOneTransaction(TradeSearchCfinCommand command) {
 		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
+		throw new UnknownEventException(command.getId(),"TradeCfinRetrievedEvent");
+		/*
 		return process(command.getId(),
-				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
+				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));*/
+	}
+	
+	@Override
+	public Trade processInOneTransaction(TradeSearchFailCfinCommand command) {
+		logger.debug("processing TradeSearchFailCfinCommand with id=" + command.getId());
+		return process(command.getId(),
+				trade -> trade.searchFailCfin(command.getErrorMessage()));
 	}
 	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
@@ -160,6 +175,6 @@ public class TradeServiceImpl implements TradeService {
 	
 	@Override
 	public List<Event> loadAllEvents() {
-		return jpaEventStore.loadAllNotSentEvents();
+		return jpaEventStore.loadAllEvents();
 	}
 }

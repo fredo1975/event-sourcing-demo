@@ -26,7 +26,7 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { fr.fredos.dvdtheque.event.sourcing.demo.EventSourcingSpringBootApplication.class })
-@ActiveProfiles("jpa")
+@ActiveProfiles("mybatis")
 public class TradeServiceImplTest {
 	protected Logger logger = LoggerFactory.getLogger(TradeServiceImplTest.class);
 	@Autowired
@@ -43,8 +43,8 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
-		assertNotNull(trade.getCfin());
-		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
+		//assertNotNull(trade.getCfin());
+		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
 		long end = new Date().getTime() - start;
 		logger.info("Finished tradeReceiveCommandInOneProcessTest in " + end + " ms");
 	}
@@ -128,6 +128,14 @@ public class TradeServiceImplTest {
 	}
 	
 	@Test
+	void loadAllEvents() throws ClassNotFoundException {
+		long start = new Date().getTime();
+		List<Event> l = tradeService.loadAllEvents();
+		//assertTrue(CollectionUtils.isNotEmpty(l));
+		long end = new Date().getTime() - start;
+		logger.info("Finished loadAllEvents in " + end + " ms and retrieved l.size()=" + l.size());
+	}
+	@Test
 	void loadAllNotSentTradeEntities() throws ClassNotFoundException {
 		long start = new Date().getTime();
 		List<Event> l = tradeService.loadAllNotSentEvents();
@@ -146,7 +154,7 @@ public class TradeServiceImplTest {
 			InstantiationException, IllegalAccessException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 100; i++) {
 			executor.execute(new MyRunnable(tradeService));
 		}
 		executor.shutdown();
@@ -216,7 +224,7 @@ public class TradeServiceImplTest {
 	void processReceiveCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 100; i++) {
 			executor.execute(new MyRunnableInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -259,7 +267,7 @@ public class TradeServiceImplTest {
 	void processNotSentInOneProcessMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 1200; i++) {
+		for (int i = 0; i < 10; i++) {
 			executor.execute(new MyRunnableNotSent(tradeService));
 		}
 		executor.shutdown();

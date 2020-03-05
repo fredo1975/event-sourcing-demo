@@ -15,6 +15,7 @@ public class Trade extends Aggregate{
     private double price;
     private int quantity;
     private String cfin;
+    private String errorMessage;
     public Trade(String  id, String isin, String ccy, double price, int quantity) {
         super(id);
         validateIsin(isin);
@@ -30,10 +31,16 @@ public class Trade extends Aggregate{
         super(id, eventStream);
     }
     
-    public void searchCfin(String  id, String isin, String ccy) {
+    public void searchCfin(String id, String isin, String ccy) {
     	String cfinRetrieved = "00000";
     	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
                 getId(), getNextVersion(), cfinRetrieved);
+        applyNewEvent(tradeCfinRetrievedEvent);
+    }
+    
+    public void searchFailCfin(String errorMessage) {
+    	TradeCfinRetrieveFailedEvent tradeCfinRetrievedEvent = new TradeCfinRetrieveFailedEvent(
+                getId(), getNextVersion(), errorMessage);
         applyNewEvent(tradeCfinRetrievedEvent);
     }
     
@@ -60,6 +67,10 @@ public class Trade extends Aggregate{
     private void apply(TradeSentEvent event) {
         //this.cfin = event.getCfin();
     }
+    @SuppressWarnings("unused")
+    private void apply(TradeCfinRetrieveFailedEvent event) {
+        this.errorMessage = event.getErrorMessage();
+    }
 
 	public String getIsin() {
 		return isin;
@@ -81,7 +92,11 @@ public class Trade extends Aggregate{
 		return cfin;
 	}
 
-    private void validateIsin(String isin) {
+    public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	private void validateIsin(String isin) {
         checkNotNull(StringUtils.isNotBlank(isin));
     }
     

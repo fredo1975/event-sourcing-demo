@@ -19,7 +19,7 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.OptimisticLockingException;
 
-@SpringBootTest(classes = {fr.fredos.dvdtheque.event.sourcing.demo.events.store.JpaEventStore.class,fr.fredos.dvdtheque.event.sourcing.demo.EventSourcingSpringBootApplication.class})
+@SpringBootTest(classes = {fr.fredos.dvdtheque.event.sourcing.demo.events.store.DbEventStore.class,fr.fredos.dvdtheque.event.sourcing.demo.EventSourcingSpringBootApplication.class})
 @ActiveProfiles("jpa")
 public class JpaEventStoreTest {
 	@Autowired
