@@ -17,7 +17,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
@@ -58,15 +59,22 @@ public class TradeServiceImpl implements TradeService {
 	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade processInOneTransaction(TradeReceiveCommand command) throws ClassNotFoundException {
+	public Trade processInOneTransaction(TradeReceiveBookCommand command) throws ClassNotFoundException {
 		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),command.getPrice(),command.getQuantity());
 		storeEvents(trade);
 		return jumpToNextCommand(trade);
 	}
-
+	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade process(TradeReceiveCommand command) throws SerializeException {
+	public Trade processCancelInOneTransaction(TradeReceiveCancelCommand command){
+		Trade trade = new Trade(command.getTradeId());
+		storeEvents(trade);
+		return jumpToNextCommand(trade);
+	}
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public Trade process(TradeReceiveBookCommand command) throws SerializeException {
 		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),
 				command.getPrice(), command.getQuantity());
 		logger.debug("processing TradeReceiveCommand with id=" + trade.getId());

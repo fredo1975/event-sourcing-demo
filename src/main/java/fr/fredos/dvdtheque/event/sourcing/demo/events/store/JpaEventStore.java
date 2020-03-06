@@ -23,13 +23,9 @@ import com.hazelcast.core.IMap;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedEvent;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeSentEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.repository.TradeEntity;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.DeserializeException;
 import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
-import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.UnknownEventException;
 @Component("jpaEventStore")
 public class JpaEventStore implements EventStore{
 	protected Logger logger = LoggerFactory.getLogger(JpaEventStore.class);
@@ -53,6 +49,7 @@ public class JpaEventStore implements EventStore{
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
 		try {
+			/*
 			if(event instanceof TradeReceivedEvent) {
 				TradeReceivedEvent e = (TradeReceivedEvent)event;
 				entity.setPayload(map.writeValueAsString(e));
@@ -62,7 +59,8 @@ public class JpaEventStore implements EventStore{
 			}else if(event instanceof TradeCfinRetrievedEvent){
 				TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
 				entity.setPayload(map.writeValueAsString(e));
-			}
+			}*/
+			entity.setPayload(map.writeValueAsString(event));
 			entity.setPayloadType(event.getClass().getTypeName());
 			List<TradeEntity> l = mapTradeEntity.get(aggregateId.toString());
 			if (CollectionUtils.isEmpty(l)) {
@@ -91,19 +89,9 @@ public class JpaEventStore implements EventStore{
 			List<Event> eventList = new ArrayList<Event>();
 			ObjectMapper map = new ObjectMapper();
 			for(TradeEntity te : tradeEntityList) {
-				Event e=null;
 				try {
 					Class<?> clazz = Class.forName(te.getPayloadType());
-					if(clazz.equals(TradeReceivedEvent.class)) {
-						e = (TradeReceivedEvent) map.readValue(te.getPayload(), clazz);
-					}else if(clazz.equals(TradeSentEvent.class)) {
-						e = (TradeSentEvent) map.readValue(te.getPayload(), clazz);
-					}else if(clazz.equals(TradeCfinRetrievedEvent.class)){
-						e = (TradeCfinRetrievedEvent) map.readValue(te.getPayload(), clazz);
-					}else {
-						new UnknownEventException(te.getAggregateIdentifier(),te.getPayloadType());
-					}
-					eventList.add(e);
+					eventList.add((Event) map.readValue(te.getPayload(), clazz));
 				}catch(JsonProcessingException ex) {
 					throw new DeserializeException(te.getAggregateIdentifier(),te.getPayloadType());
 				}catch(ClassNotFoundException ce) {

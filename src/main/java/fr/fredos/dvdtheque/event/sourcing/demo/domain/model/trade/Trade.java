@@ -15,6 +15,9 @@ public class Trade extends Aggregate{
     private double price;
     private int quantity;
     private String cfin;
+    public Trade(String  id) {
+    	super(id);
+    }
     public Trade(String  id, String isin, String ccy, double price, int quantity) {
         super(id);
         validateIsin(isin);
