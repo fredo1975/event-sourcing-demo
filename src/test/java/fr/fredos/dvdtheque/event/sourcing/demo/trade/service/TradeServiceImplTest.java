@@ -10,26 +10,24 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeEnterManualCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(classes = { fr.fredos.dvdtheque.event.sourcing.demo.EventSourcingSpringBootApplication.class })
 @ActiveProfiles("mybatis")
 public class TradeServiceImplTest {
 	protected Logger logger = LoggerFactory.getLogger(TradeServiceImplTest.class);
 	@Autowired
-	TradeService tradeService;
+	private TradeService tradeService;
 
 	@Test
 	void processReceiveBookCommandTest() throws SerializeException,
@@ -46,6 +44,25 @@ public class TradeServiceImplTest {
 		assertEquals(Integer.valueOf(2),Integer.valueOf(trade.getBaseVersion()));
 		long end = new Date().getTime() - start;
 		logger.info("Finished processReceiveBookCommandTest in " + end + " ms");
+	}
+	
+	@Test
+	void processReceiveBookCommandAndFailCfinTest() throws SerializeException,
+			ClassNotFoundException, InstantiationException, IllegalAccessException {
+		final String id = randomUUID().toString();
+		long start = new Date().getTime();
+		tradeService.processCfinFailed(new TradeReceiveBookCommand(id, "FR0000", "EUR", 1000.0d, 50));
+		Trade trade = tradeService.process(new TradeEnterManualCfinCommand(id,"00000"));
+		assertNotNull(trade);
+		assertNotNull(trade.getId());
+		assertNotNull(trade.getIsin());
+		assertNotNull(trade.getCcy());
+		assertNotNull(trade.getPrice());
+		assertNotNull(trade.getQuantity());
+		assertEquals("00000", trade.getCfin());
+		assertEquals(Integer.valueOf(3),Integer.valueOf(trade.getBaseVersion()));
+		long end = new Date().getTime() - start;
+		logger.info("Finished id="+id+" processReceiveBookCommandTest in " + end + " ms");
 	}
 	
 	@Test
@@ -133,11 +150,11 @@ public class TradeServiceImplTest {
 	}
 
 	@Test
-	void processReceiveBookCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
+	void processReceiveBookCommandMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
 		for (int i = 0; i < 5; i++) {
-			executor.execute(new MyRunnableBookInOneTransaction(tradeService));
+			executor.execute(new MyRunnableBookCommand(tradeService));
 		}
 		executor.shutdown();
 		while (!executor.isTerminated()) {
@@ -147,10 +164,10 @@ public class TradeServiceImplTest {
 		logger.info("Finished processReceiveBookCommandInOneTransactionMultiThreadTest all threads in " + end + " ms");
 	}
 
-	public class MyRunnableBookInOneTransaction implements Runnable {
+	public class MyRunnableBookCommand implements Runnable {
 		TradeService tradeService;
 
-		MyRunnableBookInOneTransaction(TradeService tradeService) {
+		MyRunnableBookCommand(TradeService tradeService) {
 			this.tradeService = tradeService;
 		}
 
@@ -174,7 +191,7 @@ public class TradeServiceImplTest {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
 		for (int i = 0; i < 10; i++) {
-			executor.execute(new MyRunnableBookAndCancelInOneTransaction(tradeService));
+			executor.execute(new MyRunnableBookAndCancel(tradeService));
 		}
 		executor.shutdown();
 		while (!executor.isTerminated()) {
@@ -184,10 +201,10 @@ public class TradeServiceImplTest {
 		logger.info("Finished processReceiveBookAndCancelCommandInOneTransactionMultiThreadTest all threads in " + end + " ms");
 	}
 	
-	public class MyRunnableBookAndCancelInOneTransaction implements Runnable {
+	public class MyRunnableBookAndCancel implements Runnable {
 		TradeService tradeService;
 
-		MyRunnableBookAndCancelInOneTransaction(TradeService tradeService) {
+		MyRunnableBookAndCancel(TradeService tradeService) {
 			this.tradeService = tradeService;
 		}
 

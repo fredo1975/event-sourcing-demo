@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeEnterManualCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
@@ -25,6 +26,7 @@ import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinManuallyEnterredEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrieveFailedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedBookEvent;
@@ -46,6 +48,7 @@ public class TradeServiceImpl implements TradeService {
 		map.put(TradeCfinRetrievedEvent.class, TradeSendCommand.class);
 		map.put(TradeReceivedBookEvent.class, TradeSearchCfinCommand.class);
 		map.put(TradeReceivedCancelEvent.class, TradeSendCommand.class);
+		map.put(TradeCfinManuallyEnterredEvent.class, TradeSendCommand.class);
 	}
 
 	private Trade jumpToNextCommand(Trade trade){
@@ -57,6 +60,8 @@ public class TradeServiceImpl implements TradeService {
 					return process(new TradeSendCommand(trade.getId()));
 				}else if (nextCommand  != null && nextCommand.equals(TradeSearchCfinCommand.class)) {
 					trade = process(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
+				}else if (nextCommand  != null && nextCommand.equals(TradeEnterManualCfinCommand.class)) {
+					trade = process(new TradeEnterManualCfinCommand(trade.getId(), trade.getCfin()));
 				}else {
 					throw new NextCommandNotFoundException(trade.getId(),nextCommand);
 				}
@@ -82,6 +87,14 @@ public class TradeServiceImpl implements TradeService {
 		return jumpToNextCommand(trade);
 	}
 	
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public Trade process(TradeEnterManualCfinCommand command){
+		Trade trade = process(command.getId(), t -> t.manualCfin(command.getCfin()));
+		return jumpToNextCommand(trade);
+	}
+	
+	@Override
 	public Optional<Trade> loadTrade(String id){
 		List<Event> eventStream = jpaEventStore.load(id);
 		if (eventStream.isEmpty())
@@ -181,5 +194,24 @@ public class TradeServiceImpl implements TradeService {
 	@Override
 	public List<Event> loadAllEvents() {
 		return jpaEventStore.loadAllEvents();
+	}
+	
+	
+	////////////////////////////////////////// for test /////////////////////////////////////////////////////////////////
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+	@Override
+	public Trade processCfinFailed(TradeSearchCfinCommand command) {
+		logger.debug("processing processCfinFailed with id=" + command.getId());
+		processSearchAndFailCfin(command.getIsin(), command.getCcy());
+		process(command.getId(),
+				trade -> trade.searchFailCfin("unable to retrieve cfin"));
+		return null;
+	}
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public Trade processCfinFailed(TradeReceiveBookCommand command) {
+		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),command.getPrice(),command.getQuantity());
+		storeEvents(trade);
+		return processCfinFailed(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
 	}
 }

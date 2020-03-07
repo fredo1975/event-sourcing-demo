@@ -51,20 +51,6 @@ public class DbEventStore implements EventStore{
 		Event event = newEvents.get(0);
 		ObjectMapper map = new ObjectMapper();
 		try {
-			/*
-			if(event instanceof TradeReceivedEvent) {
-				TradeReceivedEvent e = (TradeReceivedEvent)event;
-				entity.setPayload(map.writeValueAsString(e));
-			}else if(event instanceof TradeSentEvent) {
-				TradeSentEvent e = (TradeSentEvent)event;
-				entity.setPayload(map.writeValueAsString(e));
-			}else if(event instanceof TradeCfinRetrievedEvent){
-				TradeCfinRetrievedEvent e = (TradeCfinRetrievedEvent)event;
-				entity.setPayload(map.writeValueAsString(e));
-			}else if(event instanceof TradeCfinRetrieveFailedEvent){
-				TradeCfinRetrieveFailedEvent e = (TradeCfinRetrieveFailedEvent)event;
-				entity.setPayload(map.writeValueAsString(e));
-			}*/
 			entity.setPayload(map.writeValueAsString(event));
 			entity.setPayloadType(event.getClass().getTypeName());
 			List<TradeDbObject> l = mapTradeEntity.get(aggregateId.toString());

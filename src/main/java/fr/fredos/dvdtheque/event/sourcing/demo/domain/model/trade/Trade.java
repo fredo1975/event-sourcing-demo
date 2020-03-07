@@ -39,7 +39,14 @@ public class Trade extends Aggregate{
                 getId(), getNextVersion());
         applyNewEvent(tradeReceivedCancelEvent);
     }
+    public void manualCfin(String cfin) {
+    	validateCfin(cfin);
+    	TradeCfinManuallyEnterredEvent tradeCfinManuallyEnterredEvent = new TradeCfinManuallyEnterredEvent(
+                getId(), getNextVersion(), getIsin(),getCcy(),cfin);
+        applyNewEvent(tradeCfinManuallyEnterredEvent);
+    }
     public void searchCfin(String cfin) {
+    	validateCfin(cfin);
     	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
                 getId(), getNextVersion(), getIsin(),getCcy(),cfin);
         applyNewEvent(tradeCfinRetrievedEvent);
@@ -70,6 +77,10 @@ public class Trade extends Aggregate{
     }
     @SuppressWarnings("unused")
     private void apply(TradeCfinRetrievedEvent event) {
+        this.cfin = event.getCfin();
+    }
+    @SuppressWarnings("unused")
+    private void apply(TradeCfinManuallyEnterredEvent event) {
         this.cfin = event.getCfin();
     }
     
@@ -109,7 +120,9 @@ public class Trade extends Aggregate{
 	private void validateIsin(String isin) {
         checkNotNull(StringUtils.isNotBlank(isin));
     }
-    
+	private void validateCfin(String cfin) {
+        checkNotNull(StringUtils.isNotBlank(cfin));
+    }
     private void validateCcy(String ccy) {
     	checkNotNull(StringUtils.isNotBlank(ccy));
     }
