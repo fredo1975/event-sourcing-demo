@@ -7,14 +7,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
-public class TradeReceivedEvent extends Event{
+public class TradeReceivedBookEvent extends Event{
 	private String tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
     @JsonCreator
-    public TradeReceivedEvent(@JsonProperty("aggregateId")String aggregateId,@JsonProperty("version") Integer version,
+    public TradeReceivedBookEvent(@JsonProperty("aggregateId")String aggregateId,@JsonProperty("version") Integer version,
     		@JsonProperty("tradeId") String tradeId,
     		@JsonProperty("isin") String isin,
     		@JsonProperty("ccy") String ccy,

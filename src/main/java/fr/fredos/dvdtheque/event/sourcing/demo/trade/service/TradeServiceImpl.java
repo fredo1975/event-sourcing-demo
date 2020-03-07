@@ -17,15 +17,18 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
+import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchFailCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.EventStore;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrieveFailedEvent;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeCfinRetrievedEvent;
-import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedEvent;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedBookEvent;
+import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.TradeReceivedCancelEvent;
 
 @Service
 public class TradeServiceImpl implements TradeService {
@@ -41,7 +44,8 @@ public class TradeServiceImpl implements TradeService {
 	public void init() {
 		map = new HashMap<>();
 		map.put(TradeCfinRetrievedEvent.class, TradeSendCommand.class);
-		map.put(TradeReceivedEvent.class, TradeSearchCfinCommand.class);
+		map.put(TradeReceivedBookEvent.class, TradeSearchCfinCommand.class);
+		map.put(TradeReceivedCancelEvent.class, TradeSendCommand.class);
 	}
 
 	private Trade jumpToNextCommand(Trade trade){
@@ -53,9 +57,8 @@ public class TradeServiceImpl implements TradeService {
 			try {
 				trade = processInOneTransaction(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(), trade.getCcy()));
 			}catch(RuntimeException e) {
-				return processInOneTransaction(new TradeSearchFailCfinCommand(trade.getId(), e.getMessage()));
+				return processInOneTransaction(new TradeSearchFailCfinCommand(trade.getId(),trade.getIsin(), trade.getCcy(), e.getMessage()));
 			}
-			
 		}else {
 			throw new NextCommandNotFoundException(trade.getId(),nextCommand);
 		}
@@ -64,15 +67,23 @@ public class TradeServiceImpl implements TradeService {
 	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade processInOneTransaction(TradeReceiveCommand command) throws ClassNotFoundException {
+	public Trade processInOneTransaction(TradeReceiveBookCommand command) {
 		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),command.getPrice(),command.getQuantity());
 		storeEvents(trade);
 		return jumpToNextCommand(trade);
 	}
-
+	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade process(TradeReceiveCommand command) throws SerializeException {
+	public Trade processCancelInOneTransaction(TradeReceiveCancelCommand command){
+		Trade trade = process(command.getId(), t -> t.cancel());
+		return jumpToNextCommand(trade);
+		/*storeEvents(trade);
+		return jumpToNextCommand(trade);*/
+	}
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public Trade process(TradeReceiveBookCommand command) throws SerializeException {
 		Trade trade = new Trade(command.getTradeId(), command.getIsin(), command.getCcy(),
 				command.getPrice(), command.getQuantity());
 		logger.debug("processing TradeReceiveCommand with id=" + trade.getId());
@@ -90,15 +101,16 @@ public class TradeServiceImpl implements TradeService {
 	@Override
 	public Trade processInOneTransaction(TradeSendCommand command) {
 		logger.debug("processing TradeSendCommand with id=" + command.getId());
-		return process(command.getId(), trade -> trade.send(command.getId()));
+		return process(command.getId(), trade -> trade.send());
 	}
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public Trade processInOneTransaction(TradeSearchCfinCommand command) {
 		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
-		throw new UnknownEventException(command.getId(),"TradeCfinRetrievedEvent");
-		/*
+		//throw new UnknownEventException(command.getId(),"TradeCfinRetrievedEvent");
+		
 		return process(command.getId(),
-				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));*/
+				trade -> trade.searchCfin(command.getIsin(), command.getCcy()));
 	}
 	
 	@Override
@@ -110,17 +122,17 @@ public class TradeServiceImpl implements TradeService {
 	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade process(TradeSearchCfinCommand command) throws ClassNotFoundException {
+	public Trade process(TradeSearchCfinCommand command) {
 		logger.debug("processing TradeSearchCfinCommand with id=" + command.getId());
 		return process(command.getId(),
-				trade -> trade.searchCfin(command.getId(), command.getIsin(), command.getCcy()));
+				trade -> trade.searchCfin(command.getIsin(), command.getCcy()));
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public Trade process(TradeSendCommand command) throws ClassNotFoundException {
+	public Trade process(TradeSendCommand command) {
 		logger.debug("processing TradeSendCommand with id=" + command.getId());
-		return process(command.getId(), trade -> trade.send(command.getId()));
+		return process(command.getId(), trade -> trade.send());
 	}
 
 	private Trade process(String id, Consumer<Trade> consumer) {
@@ -148,24 +160,33 @@ public class TradeServiceImpl implements TradeService {
 		List<Event> eventsList = loadAllNotSentEvents();
 		if (CollectionUtils.isNotEmpty(eventsList)) {
 			eventsList.forEach(event -> {
-				if (event instanceof TradeReceivedEvent) {
-					Trade trade = null;
-					try {
-						trade = process(new TradeSearchCfinCommand(event.getAggregateId(),
-								((TradeReceivedEvent) event).getIsin(), ((TradeReceivedEvent) event).getCcy()));
-						jumpToNextCommand(trade);
-					} catch (ClassNotFoundException e1) {
-						e1.printStackTrace();
-					}
-				} else if (event instanceof TradeCfinRetrievedEvent) {
-					try {
-						process(new TradeSendCommand(event.getAggregateId()));
-					} catch (ClassNotFoundException e1) {
-						e1.printStackTrace();
-					}
-				}
+				replayEvent(event);
+				/*
+				if (event instanceof TradeReceivedBookEvent) {
+					jumpToNextCommand(process(new TradeSearchCfinCommand(event.getAggregateId(),
+							((TradeReceivedBookEvent) event).getIsin(), ((TradeReceivedBookEvent) event).getCcy())));
+				} else if (event instanceof TradeCfinRetrievedEvent || event instanceof TradeReceivedCancelEvent) {
+					process(new TradeSendCommand(event.getAggregateId()));
+				}else if (event instanceof TradeReceivedCancelEvent) {
+					process(new TradeSendCommand(event.getAggregateId()));
+				}*/
 			});
 		}
+	}
+	
+	private Trade replayEvent(Event event) {
+		if (event instanceof TradeReceivedBookEvent) {
+			return jumpToNextCommand(process(new TradeSearchCfinCommand(event.getAggregateId(),
+					((TradeReceivedBookEvent) event).getIsin(), ((TradeReceivedBookEvent) event).getCcy())));
+		} else if (event instanceof TradeCfinRetrievedEvent || event instanceof TradeReceivedCancelEvent) {
+			return process(new TradeSendCommand(event.getAggregateId()));
+		}else if (event instanceof TradeReceivedCancelEvent) {
+			return process(new TradeSendCommand(event.getAggregateId()));
+		}else if (event instanceof TradeCfinRetrieveFailedEvent) {
+			return jumpToNextCommand(process(new TradeSearchCfinCommand(event.getAggregateId(),
+					((TradeCfinRetrieveFailedEvent) event).getIsin(), ((TradeCfinRetrieveFailedEvent) event).getCcy())));
+		}
+		return null;
 	}
 
 	@Override

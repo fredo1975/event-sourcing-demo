@@ -16,13 +16,16 @@ public class Trade extends Aggregate{
     private int quantity;
     private String cfin;
     private String errorMessage;
+    public Trade(String  id) {
+    	super(id);
+    }
     public Trade(String  id, String isin, String ccy, double price, int quantity) {
         super(id);
         validateIsin(isin);
         validateCcy(isin);
         validatePrice(price);
         validateQuantity(quantity);
-        TradeReceivedEvent tradeReceived = new TradeReceivedEvent(
+        TradeReceivedBookEvent tradeReceived = new TradeReceivedBookEvent(
                 id, getNextVersion(), id, isin, ccy, price, quantity);
         applyNewEvent(tradeReceived);
     }
@@ -31,33 +34,41 @@ public class Trade extends Aggregate{
         super(id, eventStream);
     }
     
-    public void searchCfin(String id, String isin, String ccy) {
+    public void cancel() {
+    	TradeReceivedCancelEvent tradeReceivedCancelEvent = new TradeReceivedCancelEvent(
+                getId(), getNextVersion());
+        applyNewEvent(tradeReceivedCancelEvent);
+    }
+    public void searchCfin(String isin,String ccy) {
     	String cfinRetrieved = "00000";
     	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
-                getId(), getNextVersion(), cfinRetrieved);
+                getId(), getNextVersion(), isin,ccy,cfinRetrieved);
         applyNewEvent(tradeCfinRetrievedEvent);
     }
     
     public void searchFailCfin(String errorMessage) {
     	TradeCfinRetrieveFailedEvent tradeCfinRetrievedEvent = new TradeCfinRetrieveFailedEvent(
-                getId(), getNextVersion(), errorMessage);
+                getId(), getNextVersion(),getIsin(),getCcy(), errorMessage);
         applyNewEvent(tradeCfinRetrievedEvent);
     }
     
-    public void send(String id) {
+    public void send() {
     	TradeSentEvent tradeSendedEvent = new TradeSentEvent(
                 getId(), getNextVersion());
         applyNewEvent(tradeSendedEvent);
     }
 
     @SuppressWarnings("unused")
-    public void apply(TradeReceivedEvent event) {
+    public void apply(TradeReceivedBookEvent event) {
     	this.isin = event.getIsin();
         this.ccy = event.getCcy();
         this.price = event.getPrice();
         this.quantity = event.getQuantity();
     }
-
+    @SuppressWarnings("unused")
+    public void apply(TradeReceivedCancelEvent event) {
+    	
+    }
     @SuppressWarnings("unused")
     private void apply(TradeCfinRetrievedEvent event) {
         this.cfin = event.getCfin();

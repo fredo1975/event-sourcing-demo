@@ -2,14 +2,14 @@ package fr.fredos.dvdtheque.event.sourcing.demo.commands;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class TradeReceiveCommand implements TradeCommand{
+public class TradeReceiveBookCommand implements TradeCommand{
 	private String tradeId;
 	private String isin;
     private String ccy;
     private double price;
     private int quantity;
     
-    public TradeReceiveCommand(String tradeId, String isin, String ccy,double price, int quantity) {
+    public TradeReceiveBookCommand(String tradeId, String isin, String ccy,double price, int quantity) {
     	this.tradeId = checkNotNull(tradeId);
         this.isin = checkNotNull(isin);
         this.ccy = checkNotNull(ccy);

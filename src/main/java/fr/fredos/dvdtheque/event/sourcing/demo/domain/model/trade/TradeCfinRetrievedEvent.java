@@ -7,9 +7,13 @@ import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 
 public class TradeCfinRetrievedEvent extends Event{
 	private final String cfin;
+	private String isin;
+    private String ccy;
 	@JsonCreator
     public TradeCfinRetrievedEvent(@JsonProperty("aggregateId")String aggregateId,
     		@JsonProperty("version") Integer version,
+    		@JsonProperty("isin")String isin,
+    		@JsonProperty("ccy")String ccy,
     		@JsonProperty("cfin") String cfin) {
         super(aggregateId, version);
         this.cfin = checkNotNull(cfin);
@@ -17,9 +21,11 @@ public class TradeCfinRetrievedEvent extends Event{
 	public String getCfin() {
 		return cfin;
 	}
-	@Override
-	public String toString() {
-		return "TradeCfinRetrievedEvent [cfin=" + cfin + "]";
+	public String getIsin() {
+		return isin;
 	}
-
+	public String getCcy() {
+		return ccy;
+	}
+	
 }
