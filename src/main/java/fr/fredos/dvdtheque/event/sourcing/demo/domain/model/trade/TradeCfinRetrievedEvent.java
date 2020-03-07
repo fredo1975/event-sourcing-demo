@@ -17,6 +17,8 @@ public class TradeCfinRetrievedEvent extends Event{
     		@JsonProperty("cfin") String cfin) {
         super(aggregateId, version);
         this.cfin = checkNotNull(cfin);
+        this.isin = isin;
+        this.ccy = ccy;
     }
 	public String getCfin() {
 		return cfin;

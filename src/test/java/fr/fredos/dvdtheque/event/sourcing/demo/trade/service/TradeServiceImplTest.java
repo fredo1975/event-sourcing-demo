@@ -3,6 +3,7 @@ package fr.fredos.dvdtheque.event.sourcing.demo.trade.service;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Date;
 import java.util.List;
@@ -21,7 +22,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchFailCfinCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
@@ -35,20 +35,20 @@ public class TradeServiceImplTest {
 	TradeService tradeService;
 
 	@Test
-	void processOneTransactionByReceiveBookCommandInOneProcessTest() throws SerializeException,
+	void processReceiveBookCommandTest() throws SerializeException,
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
-		Trade trade = tradeService.processInOneTransaction(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
+		Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
 		assertNotNull(trade.getIsin());
 		assertNotNull(trade.getCcy());
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
-		assertNotNull(trade.getCfin());
-		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
+		assertEquals("00000", trade.getCfin());
+		assertEquals(Integer.valueOf(2),Integer.valueOf(trade.getBaseVersion()));
 		long end = new Date().getTime() - start;
-		logger.info("Finished processOneTransactionByReceiveBookCommandInOneProcessTest in " + end + " ms");
+		logger.info("Finished processReceiveBookCommandTest in " + end + " ms");
 	}
 	
 	@Test
@@ -56,7 +56,7 @@ public class TradeServiceImplTest {
 			ClassNotFoundException, InstantiationException, IllegalAccessException {
 		final String id = randomUUID().toString();
 		long start = new Date().getTime();
-		Trade trade = tradeService.processInOneTransaction(new TradeReceiveBookCommand(id, "FR0000", "EUR", 1000.0d, 50));
+		Trade trade = tradeService.process(new TradeReceiveBookCommand(id, "FR0000", "EUR", 1000.0d, 50));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
 		assertNotNull(trade.getIsin());
@@ -65,7 +65,7 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getQuantity());
 		assertNotNull(trade.getCfin());
 		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
-		trade = tradeService.processCancelInOneTransaction(new TradeReceiveCancelCommand(id));
+		trade = tradeService.processCancel(new TradeReceiveCancelCommand(id));
 		assertNotNull(trade);
 		assertNotNull(trade.getId());
 		assertNotNull(trade.getIsin());
@@ -78,48 +78,18 @@ public class TradeServiceImplTest {
 		long end = new Date().getTime() - start;
 		logger.info("Finished processOneTransactionByReceiveAndCancelCommandInOneProcessTest in " + end + " ms");
 	}
-	@Test
-	void processReceiveCommandTest() throws ClassNotFoundException,
-			InstantiationException, IllegalAccessException {
-		long start = new Date().getTime();
-		Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
-		assertNotNull(trade);
-		assertNotNull(trade.getId());
-		assertNotNull(trade.getIsin());
-		assertNotNull(trade.getCcy());
-		assertNotNull(trade.getPrice());
-		assertNotNull(trade.getQuantity());
-		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
-		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveCommandTest in " + end + " ms");
-	}
 	
 	@Test
-	void processReceiveCommandAndSearchCfinCommandTest() throws ClassNotFoundException,
+	void processReceiveCommandAndSearchFailCfinCommandTest() throws ClassNotFoundException,
 			InstantiationException, IllegalAccessException {
 		long start = new Date().getTime();
-		for(int i=0;i<100;i++) {
+		for(int i=0;i<5;i++) {
 			Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
-			assertNotNull(trade);
-			assertNotNull(trade.getId());
-			assertNotNull(trade.getIsin());
-			assertNotNull(trade.getCcy());
-			assertNotNull(trade.getPrice());
-			assertNotNull(trade.getQuantity());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
-
-			trade = tradeService.processInOneTransaction(new TradeSearchFailCfinCommand(trade.getId(), trade.getIsin(),trade.getCcy(), "unable to find cfin"));
-			assertNotNull(trade);
-			assertNotNull(trade.getId());
-			assertNotNull(trade.getIsin());
-			assertNotNull(trade.getCcy());
-			assertNotNull(trade.getPrice());
-			assertNotNull(trade.getQuantity());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
+			assertNull(trade);
 		}
 		
 		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveCommandAndSearchCfinCommandTest in " + end + " ms");
+		logger.info("Finished processReceiveCommandAndSearchFailCfinCommandTest in " + end + " ms");
 	}
 
 	@Test
@@ -179,67 +149,10 @@ public class TradeServiceImplTest {
 	}
 
 	@Test
-	void processReceiveCommandMultiThreadTest() throws ClassNotFoundException,
-			InstantiationException, IllegalAccessException {
-		ExecutorService executor = Executors.newFixedThreadPool(5);
-		long start = new Date().getTime();
-		for (int i = 0; i < 10; i++) {
-			executor.execute(new MyRunnable(tradeService));
-		}
-		executor.shutdown();
-		while (!executor.isTerminated()) {
-			// System.out.println("waiting for finish ...");
-		}
-		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveCommandMultiThreadTest all threads in " + end + " ms");
-	}
-
-	public class MyRunnable implements Runnable {
-		TradeService tradeService;
-
-		MyRunnable(TradeService tradeService) {
-			this.tradeService = tradeService;
-		}
-
-		@Override
-		public void run() {
-			Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
-					50));
-			assertNotNull(trade);
-			assertNotNull(trade.getId());
-			assertNotNull(trade.getIsin());
-			assertNotNull(trade.getCcy());
-			assertNotNull(trade.getPrice());
-			assertNotNull(trade.getQuantity());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
-			trade = tradeService.process(new TradeSearchCfinCommand(trade.getId(), trade.getIsin(),
-					trade.getCcy()));
-			assertNotNull(trade);
-			assertNotNull(trade.getId());
-			assertNotNull(trade.getIsin());
-			assertNotNull(trade.getCcy());
-			assertNotNull(trade.getPrice());
-			assertNotNull(trade.getQuantity());
-			assertNotNull(trade.getCfin());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(1));
-			
-			trade = tradeService.process(new TradeSendCommand(trade.getId()));
-			assertNotNull(trade);
-			assertNotNull(trade.getId());
-			assertNotNull(trade.getIsin());
-			assertNotNull(trade.getCcy());
-			assertNotNull(trade.getPrice());
-			assertNotNull(trade.getQuantity());
-			assertNotNull(trade.getCfin());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
-		}
-	}
-
-	@Test
 	void processReceiveBookCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 500; i++) {
 			executor.execute(new MyRunnableBookInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -259,7 +172,7 @@ public class TradeServiceImplTest {
 
 		@Override
 		public void run() {
-			Trade trade = tradeService.processInOneTransaction(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
+			Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
 					50));
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
@@ -296,7 +209,7 @@ public class TradeServiceImplTest {
 
 		@Override
 		public void run() {
-			Trade trade = tradeService.processInOneTransaction(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
+			Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d,
 					50));
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
@@ -306,7 +219,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getQuantity());
 			assertNotNull(trade.getCfin());
 			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
-			trade = tradeService.processCancelInOneTransaction(new TradeReceiveCancelCommand(trade.getId()));
+			trade = tradeService.processCancel(new TradeReceiveCancelCommand(trade.getId()));
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
 			assertNotNull(trade.getIsin());

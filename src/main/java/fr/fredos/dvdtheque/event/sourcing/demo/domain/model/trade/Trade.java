@@ -39,10 +39,9 @@ public class Trade extends Aggregate{
                 getId(), getNextVersion());
         applyNewEvent(tradeReceivedCancelEvent);
     }
-    public void searchCfin(String isin,String ccy) {
-    	String cfinRetrieved = "00000";
+    public void searchCfin(String cfin) {
     	TradeCfinRetrievedEvent tradeCfinRetrievedEvent = new TradeCfinRetrievedEvent(
-                getId(), getNextVersion(), isin,ccy,cfinRetrieved);
+                getId(), getNextVersion(), getIsin(),getCcy(),cfin);
         applyNewEvent(tradeCfinRetrievedEvent);
     }
     

@@ -17,6 +17,8 @@ public class TradeCfinRetrieveFailedEvent extends Event{
     		@JsonProperty("errorMessage") String errorMessage) {
         super(aggregateId, version);
         this.errorMessage = errorMessage;
+        this.isin = isin;
+        this.ccy = ccy;
     }
 	public String getErrorMessage() {
 		return errorMessage;
