@@ -3,7 +3,6 @@ package fr.fredos.dvdtheque.event.sourcing.demo.trade.service;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 import java.util.Date;
 import java.util.List;
@@ -71,25 +70,12 @@ public class TradeServiceImplTest {
 		assertNotNull(trade.getPrice());
 		assertNotNull(trade.getQuantity());
 		assertNotNull(trade.getCfin());
-		assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(4));
+		assertEquals(Integer.valueOf(4),Integer.valueOf(trade.getBaseVersion()));
 		
 		long end = new Date().getTime() - start;
 		logger.info("Finished processOneTransactionByReceiveAndCancelCommandInOneProcessTest in " + end + " ms");
 	}
 	
-	@Test
-	void processReceiveCommandAndSearchFailCfinCommandTest() throws ClassNotFoundException,
-			InstantiationException, IllegalAccessException {
-		long start = new Date().getTime();
-		for(int i=0;i<5;i++) {
-			Trade trade = tradeService.process(new TradeReceiveBookCommand(randomUUID().toString(), "FR0000", "EUR", 1000.0d, 50));
-			assertNull(trade);
-		}
-		
-		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveCommandAndSearchFailCfinCommandTest in " + end + " ms");
-	}
-
 	@Test
 	void replayAllNotSentEvents() throws ClassNotFoundException {
 		long start = new Date().getTime();
@@ -150,7 +136,7 @@ public class TradeServiceImplTest {
 	void processReceiveBookCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 500; i++) {
+		for (int i = 0; i < 5; i++) {
 			executor.execute(new MyRunnableBookInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -179,7 +165,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
 			assertNotNull(trade.getCfin());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
+			assertEquals(Integer.valueOf(2),Integer.valueOf(trade.getBaseVersion()));
 		}
 	}
 	
@@ -187,7 +173,7 @@ public class TradeServiceImplTest {
 	void processReceiveBookAndCancelCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 10; i++) {
 			executor.execute(new MyRunnableBookAndCancelInOneTransaction(tradeService));
 		}
 		executor.shutdown();
@@ -216,7 +202,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
 			assertNotNull(trade.getCfin());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(2));
+			assertEquals(Integer.valueOf(2),Integer.valueOf(trade.getBaseVersion()));
 			trade = tradeService.processCancel(new TradeReceiveCancelCommand(trade.getId()));
 			assertNotNull(trade);
 			assertNotNull(trade.getId());
@@ -225,7 +211,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
 			assertNotNull(trade.getCfin());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(4));
+			assertEquals(Integer.valueOf(4),Integer.valueOf(trade.getBaseVersion()));
 		}
 	}
 	
@@ -260,7 +246,7 @@ public class TradeServiceImplTest {
 			assertNotNull(trade.getCcy());
 			assertNotNull(trade.getPrice());
 			assertNotNull(trade.getQuantity());
-			assertEquals(Integer.valueOf(trade.getBaseVersion()), Integer.valueOf(0));
+			assertEquals(Integer.valueOf(2),Integer.valueOf(trade.getBaseVersion()));
 		}
 	}
 }
