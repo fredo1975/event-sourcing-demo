@@ -161,7 +161,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveBookCommandInOneTransactionMultiThreadTest all threads in " + end + " ms");
+		logger.info("Finished processReceiveBookCommandMultiThreadTest all threads in " + end + " ms");
 	}
 
 	public class MyRunnableBookCommand implements Runnable {
@@ -187,7 +187,7 @@ public class TradeServiceImplTest {
 	}
 	
 	@Test
-	void processReceiveBookAndCancelCommandInOneTransactionMultiThreadTest() throws ClassNotFoundException {
+	void processReceiveBookAndCancelCommandMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
 		for (int i = 0; i < 10; i++) {
@@ -198,7 +198,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished processReceiveBookAndCancelCommandInOneTransactionMultiThreadTest all threads in " + end + " ms");
+		logger.info("Finished processReceiveBookAndCancelCommandMultiThreadTest all threads in " + end + " ms");
 	}
 	
 	public class MyRunnableBookAndCancel implements Runnable {
@@ -244,7 +244,7 @@ public class TradeServiceImplTest {
 			// System.out.println("waiting for finish ...");
 		}
 		long end = new Date().getTime() - start;
-		logger.info("Finished processNotSentInOneProcessMultiThreadTest all threads in " + end + " ms");
+		logger.info("Finished processNotSentMultiThreadTest all threads in " + end + " ms");
 	}
 	
 	public class MyRunnableNotSent implements Runnable {
