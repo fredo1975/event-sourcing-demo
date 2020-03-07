@@ -21,8 +21,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveBookCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeReceiveCancelCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSearchCfinCommand;
-import fr.fredos.dvdtheque.event.sourcing.demo.commands.TradeSendCommand;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.Event;
 import fr.fredos.dvdtheque.event.sourcing.demo.domain.model.trade.Trade;
 
