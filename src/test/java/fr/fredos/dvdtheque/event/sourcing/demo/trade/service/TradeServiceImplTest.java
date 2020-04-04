@@ -153,7 +153,7 @@ public class TradeServiceImplTest {
 	void processReceiveBookCommandMultiThreadTest() throws ClassNotFoundException {
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		long start = new Date().getTime();
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 20000; i++) {
 			executor.execute(new MyRunnableBookCommand(tradeService));
 		}
 		executor.shutdown();

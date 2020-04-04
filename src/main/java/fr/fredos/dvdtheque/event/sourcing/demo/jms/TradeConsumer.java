@@ -28,7 +28,7 @@ public class TradeConsumer {
 	@Autowired
 	private TradeService tradeService;
 	
-	private CountDownLatch latch = new CountDownLatch(10);
+	private CountDownLatch latch = new CountDownLatch(20000);
 	public CountDownLatch getLatch() {
 		return latch;
 	}

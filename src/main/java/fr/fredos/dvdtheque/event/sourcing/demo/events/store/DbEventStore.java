@@ -31,7 +31,7 @@ import fr.fredos.dvdtheque.event.sourcing.demo.trade.service.SerializeException;
 public class DbEventStore implements EventStore{
 	protected Logger logger = LoggerFactory.getLogger(DbEventStore.class);
 	@Autowired
-	TradeDao tradeDao;
+	private TradeDao tradeDao;
 	
 	private IMap<String, List<TradeDbObject>> mapTradeEntity;
 	@Autowired
@@ -39,6 +39,7 @@ public class DbEventStore implements EventStore{
 	@PostConstruct
 	public void init() {
 		mapTradeEntity = instance.getMap("events");
+		//mapTradeEntity.addIndex("aggregateId", false);
 	}
 	
 	@Override
